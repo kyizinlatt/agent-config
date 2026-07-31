@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      # No dependencies to install — the tool is zero-dep.
+      - name: Run tests
+        run: node --test
+
+      # Dogfood: the tool checks its own repo. Advisory warnings (exit 1) are fine;
+      # only a real failure (exit 2) should break CI.
+      - name: Self-check (agent-config on itself)
+        run: |
+          code=0
+          node bin/agent-config.js check || code=$?
+          if [ "$code" -ge 2 ]; then
+            echo "agent-config reported failures (exit $code)"
+            exit 1
+          fi
+          echo "self-check ok (exit $code)"
