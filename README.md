@@ -49,7 +49,7 @@ Exit codes: `0` pass · `1` warnings · `2` failures — drop it into CI or a pr
 |---|---|
 | **Secrets** | Scans committed config/instruction files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.claude`, `.cursor/rules`, …) for accidentally-committed credentials (AWS/GitHub/Slack/Google/AI keys, private keys). Reports the type and line — never the secret value. |
 | **Config** | Each tool adapter present (CLAUDE.md, GEMINI.md, `.cursor/rules`, `.agents/rules`, …) bridges to `AGENTS.md` by import or symlink — no duplication or drift. `GEMINI.md` doesn't use an unresolvable `@~/…` import. `.cursor/rules` are `.mdc` with frontmatter. `.claude/settings.json` + hooks are valid and live. |
-| **Rules** | `AGENTS.md` exists as the single source of truth, has no leftover template placeholders, isn't empty. Missing SSOT while adapters exist is a failure. |
+| **Rules** | `AGENTS.md` exists as the single source of truth, no leftover template placeholders, not empty, under ~200 lines (agent adherence drops past that), no empty sections. Missing SSOT while adapters exist is a failure. |
 | **Styles** | Stack-detected antipattern scan (TypeScript `any`/`console.log`/`@ts-ignore`; Swift `try!`/`as!`/`print`). Advisory. |
 | **Environment** | Which agent CLIs are installed; package manager matches its lockfile; base tooling present. |
 
