@@ -5,7 +5,7 @@
 // It reports the SECRET TYPE and line — never the secret value itself.
 import fs from 'node:fs';
 import path from 'node:path';
-import { isDir, isRegularFile, walk } from '../detect.js';
+import { assertInsideRepo, isDir, isRegularFile, isSymlink, walk } from '../detect.js';
 
 const PATTERNS = [
   [/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----/, 'private key block'],
@@ -31,11 +31,15 @@ export function checkSecrets(repo, findings) {
   for (const rel of TARGET_FILES) {
     const abs = path.join(repo, rel);
     // Regular files only — do not follow symlinks out of the repo (CWE-59).
-    if (isRegularFile(abs)) files.push(abs);
+    if (isRegularFile(abs) && insideRepo(repo, abs)) files.push(abs);
   }
   for (const rel of TARGET_DIRS) {
     const abs = path.join(repo, rel);
-    if (isDir(abs)) for (const f of walk(abs, { exts: ['.md', '.mdc', '.json', '.txt', '.yaml', '.yml'] })) files.push(f);
+    // Skip symlink roots (stat follows; a .claude → ~/.ssh would otherwise be walked).
+    if (!isDir(abs) || isSymlink(abs) || !insideRepo(repo, abs)) continue;
+    for (const f of walk(abs, { exts: ['.md', '.mdc', '.json', '.txt', '.yaml', '.yml'] })) {
+      if (insideRepo(repo, f)) files.push(f);
+    }
   }
 
   let clean = true;
@@ -55,6 +59,16 @@ export function checkSecrets(repo, findings) {
   }
 
   if (clean && files.length) findings.pass('Secrets', `no credentials found in ${files.length} config file(s)`);
+}
+
+/** true when realpath(abs) stays inside realpath(repo). */
+function insideRepo(repo, abs) {
+  try {
+    assertInsideRepo(repo, abs);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function safeRead(p) {

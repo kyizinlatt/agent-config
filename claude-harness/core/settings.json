@@ -36,7 +36,11 @@
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./**/.env)",
-      "Read(./**/.env.*)"
+      "Read(./**/.env.*)",
+      "Grep(./.env)",
+      "Grep(./.env.*)",
+      "Grep(./**/.env)",
+      "Grep(./**/.env.*)"
     ]
   },
   "hooks": {
@@ -49,6 +53,23 @@
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-push.sh",
             "timeout": 25,
             "statusMessage": "Checking CI is idle before push…"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-env.sh",
+            "timeout": 10,
+            "statusMessage": "Blocking .env reads…"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-env.sh",
+            "timeout": 10,
+            "statusMessage": "Blocking .env reads…"
           }
         ]
       },

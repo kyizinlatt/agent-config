@@ -49,6 +49,9 @@ fi
 [ -n "$mode" ] || mode="link"
 case "$mode" in link|vendor) ;; *) echo "error: --mode must be link or vendor" >&2 ; exit 2 ;; esac
 
+# "core-only" is the manifest sentinel for no pack — not a directory under packs/.
+[ "$pack" = "core-only" ] && pack=""
+
 PACK_DIR=""
 if [ -n "$pack" ]; then
   PACK_DIR="$HARNESS_DIR/packs/$pack"

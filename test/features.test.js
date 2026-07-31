@@ -172,3 +172,33 @@ test('secret scanning: skips symlinked AGENTS.md (no out-of-repo read)', () => {
   const f = runChecks(repo);
   assert.ok(!has(f, FAIL, /GitHub token/), 'must not follow symlink to outside secrets');
 });
+
+test('secret scanning: skips symlinked .claude dir (no out-of-repo read)', () => {
+  const fake = 'ghp_' + 'C'.repeat(36);
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-sec-dirsym-'));
+  const outsideDir = path.join(root, 'outside-claude');
+  fs.mkdirSync(outsideDir);
+  fs.writeFileSync(path.join(outsideDir, 'secrets.md'), `token: ${fake}\n`);
+  const repo = path.join(root, 'repo');
+  fs.mkdirSync(repo);
+  fs.writeFileSync(path.join(repo, 'AGENTS.md'), AGENTS);
+  fs.symlinkSync(outsideDir, path.join(repo, '.claude'));
+
+  const f = runChecks(repo);
+  assert.ok(!has(f, FAIL, /GitHub token/), 'must not walk symlinked TARGET_DIR outside the repo');
+});
+
+test('secret scanning: skips file under symlinked parent dir (CWE-59)', () => {
+  const fake = 'ghp_' + 'D'.repeat(36);
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-sec-parentsym-'));
+  const outsideDir = path.join(root, 'outside-github');
+  fs.mkdirSync(outsideDir);
+  fs.writeFileSync(path.join(outsideDir, 'copilot-instructions.md'), `token: ${fake}\n`);
+  const repo = path.join(root, 'repo');
+  fs.mkdirSync(repo);
+  fs.writeFileSync(path.join(repo, 'AGENTS.md'), AGENTS);
+  fs.symlinkSync(outsideDir, path.join(repo, '.github'));
+
+  const f = runChecks(repo);
+  assert.ok(!has(f, FAIL, /GitHub token/), 'must not read TARGET_FILES through a symlinked parent');
+});
