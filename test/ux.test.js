@@ -65,6 +65,9 @@ test('report includes Fix cards for warnings', () => {
   assert.match(out, /Tool fit/);
   assert.match(out, /AGENTS\.md quality/);
   assert.match(out, /\[WARN\].*lockfile|open issues/i);
+  // Prompt body must be copy-paste clean — no │ / box corners (section rules may use ─).
+  const promptSection = out.slice(out.indexOf('Agent prompt'));
+  assert.doesNotMatch(promptSection, /[\u2502\u250C\u2510\u2514\u2518]/);
 });
 
 test('hybrid judgement: PASS uses nuance set; issues add matching topics', () => {

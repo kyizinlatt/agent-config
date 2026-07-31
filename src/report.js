@@ -303,11 +303,20 @@ function buildJudgementPrompt(findings) {
 }
 
 function renderPromptPanel(findings) {
+  // Plain text only ù no box borders. ?/?/? chrome breaks copy-paste into agents.
   const promptRows = buildJudgementPrompt(findings);
   const lines = ['', rule('Agent prompt'), ''];
-  lines.push(c('2', '  Copy this block into your coding agent:'));
+  lines.push(c('2', '  Copy the text below into your coding agent:'));
   lines.push('');
-  lines.push(...boxLines(promptRows, { title: 'prompt', accent: '36' }));
+  for (const row of promptRows) {
+    if (!row) {
+      lines.push('');
+      continue;
+    }
+    for (const part of wrapPlain(row, 72)) {
+      lines.push(part);
+    }
+  }
   lines.push('');
   return lines;
 }
