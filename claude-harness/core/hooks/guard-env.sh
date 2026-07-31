@@ -27,7 +27,12 @@ is_env_basename() {
   esac
 }
 
-# Read uses file_path; Grep/Glob use path.
+# Path-ish reference to .env / .env.* (shared by path fields and Bash commands).
+refers_to_env() {
+  printf '%s' "$1" | grep -Eq '(^|[[:space:]'\''\"=/])\.env($|\.|[[:space:]'\''\"|&;<>])'
+}
+
+# Read uses file_path; Grep/Glob use path. Also scan Grep/Glob pattern (.env*).
 path=$(printf '%s' "$payload" | jq -r '.tool_input.file_path // .tool_input.path // empty' 2>/dev/null || true)
 if [ -n "${path:-}" ]; then
   base=$(basename -- "$path")
@@ -46,14 +51,24 @@ if [ -n "${path:-}" ]; then
   fi
 fi
 
+pattern=$(printf '%s' "$payload" | jq -r '.tool_input.pattern // empty' 2>/dev/null || true)
+if [ -n "${pattern:-}" ]; then
+  case "$pattern" in
+    .env|.env*|*\/.env|*\/.env*)
+      deny "Refusing Grep/Glob pattern that targets .env — keep credentials out of agent context."
+      ;;
+  esac
+  if refers_to_env "$pattern"; then
+    deny "Refusing Grep/Glob pattern that targets .env — keep credentials out of agent context."
+  fi
+fi
+
 tool=$(printf '%s' "$payload" | jq -r '.tool_name // empty' 2>/dev/null || true)
 if [ "$tool" = "Bash" ]; then
   cmd=$(printf '%s' "$payload" | jq -r '.tool_input.command // empty' 2>/dev/null || true)
-  # Path-ish reference to .env / .env.*
-  if printf '%s' "$cmd" | grep -Eq '(^|[[:space:]'\''\"=/])\.env($|\.|[[:space:]'\''\"|&;<>])'; then
-    if printf '%s' "$cmd" | grep -Eq '(cat|less|more|head|tail|grep|rg|awk|sed|source|xxd|od|base64|export|nl|tac|cut|sort|uniq)\b|<\s*\.env|\.\s+\.env'; then
-      deny "Refusing Bash command that reads .env — keep credentials out of agent context."
-    fi
+  # Any path-ish .env reference in Bash — including interpreters (python/node/…) and redirects.
+  if refers_to_env "$cmd"; then
+    deny "Refusing Bash command that references .env — keep credentials out of agent context."
   fi
 fi
 

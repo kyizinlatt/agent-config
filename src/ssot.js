@@ -2,15 +2,26 @@
 // the repo bridges back to it (symlink or @import) rather than duplicating rules or drifting.
 import path from 'node:path';
 import { SSOT } from '../adapters/tools.js';
-import { exists, isFile, isDir, readText, sameFile, walk } from './detect.js';
+import { assertInsideRepo, exists, isFile, isDir, isRegularFile, isSymlink, readText, sameFile, walk } from './detect.js';
 
 export function agentsMdPath(repo) {
   const p = path.join(repo, SSOT);
-  return isFile(p) || exists(p) ? p : null;
+  // Regular file, or a symlink that resolves to a file inside the repo. Dangling / escape → absent.
+  if (isRegularFile(p)) return p;
+  if (isSymlink(p) && isFile(p)) {
+    try {
+      assertInsideRepo(repo, p);
+      return p;
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
-// An @-import line that references AGENTS.md, e.g. `@AGENTS.md`, `@./AGENTS.md`, `@~/x/AGENTS.md`.
+// Relative (or ~) @-import of AGENTS.md — not an absolute filesystem path.
 const IMPORTS_AGENTS = /^@\S*AGENTS\.md\s*$/m;
+const IMPORTS_AGENTS_ABSOLUTE = /^@\/\S*AGENTS\.md\s*$/m;
 // A tilde import — valid in Claude, but NOT resolvable by Gemini.
 const IMPORT_TILDE = /^@~\//m;
 
@@ -61,6 +72,12 @@ export function verifyBridge(repo, entry, agents, findings) {
 
     if (sameFile(abs, agents)) {
       findings.pass('Config', `${rel} is a symlink to AGENTS.md — single source, no duplication`, rel);
+    } else if (IMPORTS_AGENTS_ABSOLUTE.test(content)) {
+      findings.warn(
+        'Config',
+        `${rel} @-imports AGENTS.md via an absolute path — bridge should point at this repo's SSOT (@AGENTS.md or @./AGENTS.md)`,
+        rel,
+      );
     } else if (IMPORTS_AGENTS.test(content)) {
       findings.pass('Config', `${rel} imports AGENTS.md via @ — bridged to SSOT`, rel);
     } else {
@@ -82,7 +99,8 @@ function validateCursorRules(repo, findings) {
     const rel = path.relative(repo, f);
     if (f.endsWith('.mdc')) {
       const content = readText(f);
-      if (!/^---\s*$/m.test(content.split('\n').slice(0, 1).join('\n')) && !content.startsWith('---')) {
+      const first = (content.split('\n')[0] ?? '');
+      if (!/^---\s*$/.test(first)) {
         findings.warn('Config', `${rel} is a .mdc rule with no frontmatter — add description/globs/alwaysApply`, rel);
       } else {
         findings.pass('Config', `${rel} is a valid Cursor rule`, rel);

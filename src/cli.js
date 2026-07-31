@@ -10,7 +10,7 @@ import { checkStyles } from './checks/styles.js';
 import { checkEnvironment } from './checks/environment.js';
 import { renderHuman, renderJson, renderReport, renderSarif } from './report.js';
 import { CHECK_STEPS, createProgress } from './progress.js';
-import { detectInstalledClis, exists } from './detect.js';
+import { detectInstalledClis, exists, isDir } from './detect.js';
 import { toolById } from '../adapters/tools.js';
 import { doFix } from './fix.js';
 import { doUpgrade } from './upgrade.js';
@@ -112,7 +112,7 @@ export async function run(argv) {
   }
 
   const repo = path.resolve(opts.path);
-  if (!exists(repo)) throw new Error(`no such directory: ${repo}`);
+  if (!exists(repo) || !isDir(repo)) throw new Error(`no such directory: ${repo}`);
 
   if (opts.command === 'init') return doInit(repo, opts.tool);
   if (opts.command === 'fix') return doFix(repo, { apply: opts.yes });

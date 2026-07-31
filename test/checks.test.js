@@ -64,3 +64,61 @@ test('cursor: plain .md in .cursor/rules → warned as ignored', () => {
   const f = runChecks(repo);
   assert.ok(has(f, WARN, /Cursor ignores it/), 'plain md warned');
 });
+
+test('cursor: .mdc without --- frontmatter line → warned', () => {
+  const repo = mkrepo({
+    'AGENTS.md': AGENTS,
+    '.cursor/rules/bad.mdc': '---not-really-frontmatter\n# rule\n',
+  });
+  const f = runChecks(repo);
+  assert.ok(has(f, WARN, /no frontmatter/), 'loose --- prefix must not pass as frontmatter');
+  assert.ok(!has(f, 'pass', /bad\.mdc is a valid Cursor rule/), 'must not false-pass');
+});
+
+test('cursor: .mdc with proper frontmatter → pass', () => {
+  const repo = mkrepo({
+    'AGENTS.md': AGENTS,
+    '.cursor/rules/good.mdc': '---\ndescription: x\nglobs:\nalwaysApply: true\n---\n# rule\n',
+  });
+  const f = runChecks(repo);
+  assert.ok(has(f, 'pass', /good\.mdc is a valid Cursor rule/));
+});
+
+test('absolute @/…/AGENTS.md import → Config warning (not repo SSOT)', () => {
+  const repo = mkrepo({ 'AGENTS.md': AGENTS, 'CLAUDE.md': '@/tmp/elsewhere/AGENTS.md\n' });
+  const f = runChecks(repo);
+  assert.ok(has(f, WARN, /absolute path/), 'absolute import warned');
+  assert.ok(!has(f, 'pass', /imports AGENTS\.md via @/), 'must not count as bridged');
+});
+
+test('dangling AGENTS.md symlink → treated as absent (SSOT missing)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-dang-agents-'));
+  fs.symlinkSync(path.join(dir, 'missing-agents.md'), path.join(dir, 'AGENTS.md'));
+  fs.writeFileSync(path.join(dir, 'CLAUDE.md'), '@AGENTS.md\n');
+  const f = runChecks(dir);
+  assert.ok(has(f, FAIL, /no single source of truth/), 'dangling SSOT must not count as present');
+});
+
+test('config: dangling symlink under .claude/ → Config failure', () => {
+  const repo = mkrepo({ 'AGENTS.md': AGENTS });
+  const claude = path.join(repo, '.claude');
+  fs.mkdirSync(claude);
+  fs.writeFileSync(path.join(claude, 'settings.json'), '{}\n');
+  fs.symlinkSync(path.join(claude, 'missing.sh'), path.join(claude, 'broken-link'));
+  const f = runChecks(repo);
+  assert.ok(has(f, FAIL, /dangling symlink.*broken-link/), JSON.stringify(f.items, null, 2));
+});
+
+test('config: symlinked .claude/ outside repo → warn, skip settings', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-cfg-out-'));
+  const outside = path.join(root, 'outside');
+  fs.mkdirSync(outside);
+  fs.writeFileSync(path.join(outside, 'settings.json'), '{}\n');
+  const repo = path.join(root, 'repo');
+  fs.mkdirSync(repo);
+  fs.writeFileSync(path.join(repo, 'AGENTS.md'), AGENTS);
+  fs.symlinkSync(outside, path.join(repo, '.claude'));
+  const f = runChecks(repo);
+  assert.ok(has(f, WARN, /symlink outside the repo/), 'must warn on escape');
+  assert.ok(!has(f, 'pass', /settings\.json is valid JSON/), 'must not read outside settings');
+});

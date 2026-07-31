@@ -3,7 +3,9 @@
 // check-config.sh and adds multi-tool SSOT/drift verification.
 import fs from 'node:fs';
 import path from 'node:path';
-import { detectAdapters, exists, isDir, isDangling, isFile, readlink, readText, walk } from '../detect.js';
+import {
+  detectAdapters, exists, isDir, isDangling, isFile, isInsideRepo, isSymlink, readlink, readText, walk,
+} from '../detect.js';
 import { agentsMdPath, verifyBridge } from '../ssot.js';
 
 const CORE_HOOKS = ['guard-secrets.sh', 'guard-push.sh', 'guard-env.sh', 'check-hygiene.sh'];
@@ -32,10 +34,19 @@ export function checkConfig(repo, findings) {
     }
   }
 
-  // 2. Claude Code settings + hooks (only when a .claude/ dir exists).
+  // 2. Claude Code settings + hooks (only when a .claude/ dir exists inside the repo).
   const claudeDir = path.join(repo, '.claude');
   if (isDir(claudeDir)) {
-    checkClaudeDir(repo, claudeDir, findings);
+    // Do not follow a .claude → outside symlink (CWE-59); secrets check already skips these.
+    if (isSymlink(claudeDir) || !isInsideRepo(repo, claudeDir)) {
+      findings.warn(
+        'Config',
+        '.claude/ is a symlink outside the repo — skipping Claude settings checks (CWE-59)',
+        '.claude',
+      );
+    } else {
+      checkClaudeDir(repo, claudeDir, findings);
+    }
   }
 
   // 3. MCP servers — surface how many are wired so their tool scope gets reviewed.
