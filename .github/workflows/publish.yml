@@ -7,12 +7,12 @@ name: Publish to npm
 #   Organization or user : kyizinlatt
 #   Repository           : agent-pipx
 #   Workflow filename    : publish.yml
-#   Environment name     : (leave BLANK — this repo does not use GitHub Environments)
-#   Allowed actions      : npm publish
+#   Environment name     : (leave BLANK — do NOT put "npm publish" here)
+#   Allowed actions      : Allow `npm publish`
 #
-# Requires npm CLI ≥ 11.5.1 and Node ≥ 22.14 for OIDC.
-# Do NOT leave setup-node's default NODE_AUTH_TOKEN (github.token) in place — it makes npm
-# try token auth and skip/break OIDC, which surfaces as E404 on PUT for existing packages.
+# Requires npm CLI ≥ 11.5.1. setup-node's registry-url writes an .npmrc authToken line
+# defaulting to github.token — that MUST be stripped or OIDC never runs (ENEEDAUTH / E404).
+# Never set NODE_AUTH_TOKEN to "" either — empty string also disables OIDC.
 
 on:
   release:
@@ -26,18 +26,16 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # Intentionally no `environment:` — repo secrets / Environments are not used for publish.
+    # Intentionally no `environment:` — must match blank Environment on npm Trusted Publisher.
     steps:
       - uses: actions/checkout@v5
 
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          # No registry-url here — that writes an .npmrc with _authToken=${NODE_AUTH_TOKEN}
-          # defaulting to github.token, which breaks trusted publishing.
+          registry-url: https://registry.npmjs.org
           package-manager-cache: false
 
-      # Trusted publishing needs npm ≥ 11.5.1 (Node 22 ships an older npm).
       - name: Upgrade npm for OIDC trusted publishing
         run: npm install -g npm@latest
 
@@ -45,9 +43,15 @@ jobs:
         run: node --test
 
       - name: Publish (public, provenance via OIDC)
-        # Explicitly clear any token pollution; OIDC is the only auth path.
-        env:
-          NODE_AUTH_TOKEN: ''
         run: |
-          npm config delete //registry.npmjs.org/:_authToken || true
+          set -euo pipefail
+          # Keep registry from setup-node; drop the github.token authToken line.
+          if [ -n "${NPM_CONFIG_USERCONFIG:-}" ] && [ -f "$NPM_CONFIG_USERCONFIG" ]; then
+            grep -v '_authToken' "$NPM_CONFIG_USERCONFIG" > "${NPM_CONFIG_USERCONFIG}.oidc" || true
+            mv "${NPM_CONFIG_USERCONFIG}.oidc" "$NPM_CONFIG_USERCONFIG"
+            echo "npmrc after strip:"
+            cat "$NPM_CONFIG_USERCONFIG" || true
+          fi
+          # Must unset (not empty-string) or npm skips OIDC.
+          unset NODE_AUTH_TOKEN
           npm publish --provenance --access public
