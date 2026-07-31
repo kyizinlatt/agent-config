@@ -26,12 +26,16 @@ unresolvable `@~/…` import). It is a **dry run unless you pass `--yes`**, it *
 it changes to `*.bak`** before writing, and it prints every change. It never merges, deletes, or
 guesses at your content — content drift is reported for you to resolve by hand.
 
-## Opt-in network: `upgrade`
+## Opt-in network: `upgrade` (CLI) and publish (CI)
 
-`agent-pipx upgrade` is the **only** command that contacts the network. It asks the npm registry
-for the latest `agent-pipx` version (`npm view`). With `--yes` it may run
+`agent-pipx upgrade` is the only **CLI** command that contacts the network. It asks the npm
+registry for the latest version (`npm view`). With `--yes` it may run
 `npm install -g agent-pipx@<version>`. Dry-run (default) only prints the suggested command.
 `check` / `report` remain offline.
+
+npm package publishes from GitHub Actions use **Trusted Publishing (OIDC)** — no `NPM_TOKEN`,
+no GitHub Environment. On npmjs.com → package Settings → Trusted Publisher, set workflow
+`publish.yml` and leave **Environment name blank**.
 
 ## What it reads
 

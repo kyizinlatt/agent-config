@@ -1,11 +1,16 @@
 name: Publish to npm
 
-# Publishes when you create a GitHub Release (or run manually). Publishing from CI with
-# --provenance attaches a signed Sigstore attestation proving the package was built from this
-# repo + commit — the strongest supply-chain guarantee npm offers.
+# Publishes when you create a GitHub Release (or run manually).
 #
-# One-time setup: add an npm automation token as the repo secret NPM_TOKEN
-# (npmjs.com → Access Tokens → Generate → "Automation"). Publishing is gated on the tests.
+# Auth: npm Trusted Publishing (OIDC) — NO GitHub Environment, NO NPM_TOKEN.
+# One-time setup on https://www.npmjs.com/package/agent-pipx → Settings → Trusted Publisher:
+#   Organization or user : kyizinlatt
+#   Repository           : agent-pipx
+#   Workflow filename    : publish.yml
+#   Environment name     : (leave BLANK — this repo does not use GitHub Environments)
+#   Allowed actions      : npm publish
+#
+# Requires npm CLI ≥ 11.5.1 for OIDC. Provenance is attached automatically with trusted publishing.
 
 on:
   release:
@@ -14,20 +19,28 @@ on:
 
 permissions:
   contents: read
-  id-token: write # required for npm provenance (OIDC)
+  id-token: write # OIDC for npm trusted publishing + provenance
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Intentionally no `environment:` — repo secrets / Environments are not used for publish.
     steps:
       - uses: actions/checkout@v5
+
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      # Trusted publishing needs npm ≥ 11.5.1 (Node 22 ships an older npm).
+      - name: Upgrade npm for OIDC trusted publishing
+        run: npm install -g npm@latest
+
       - name: Test before publish
         run: node --test
-      - name: Publish (public, with provenance)
+
+      - name: Publish (public, provenance via OIDC)
+        # Do NOT set NODE_AUTH_TOKEN — an empty token makes npm skip OIDC and fail with ENEEDAUTH.
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
