@@ -1,4 +1,4 @@
-// `agent-config fix` — apply only SAFE, mechanical remediations. It never merges, deletes, or
+// `agent-pipx fix` — apply only SAFE, mechanical remediations. It never merges, deletes, or
 // guesses at your content: it backs up any file it touches (.bak) and, without --yes, does a
 // dry-run that just prints what it would do. Content drift (a CLAUDE.md with its own rules) is
 // reported as manual, never auto-rewritten.
@@ -37,7 +37,7 @@ function fixers(repo) {
 export function doFix(repo, { apply = false } = {}) {
   const list = fixers(repo);
   if (list.length === 0) {
-    console.log('Nothing to auto-fix. Content drift and missing rules need a human — run `agent-config check`.');
+    console.log('Nothing to auto-fix. Content drift and missing rules need a human — run `agent-pipx check`.');
     return 0;
   }
 

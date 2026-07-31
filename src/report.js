@@ -11,7 +11,7 @@ const ORDER = { [FAIL]: 0, [WARN]: 1, [PASS]: 2 };
 export function renderHuman(findings, repo) {
   const lines = [];
   lines.push('');
-  lines.push(`agent-config conformance — ${repo}`);
+  lines.push(`agent-pipx conformance — ${repo}`);
   lines.push('');
   for (const cat of CATEGORIES) {
     const items = findings.items
@@ -45,7 +45,7 @@ export function renderSarif(findings, repo) {
   const results = findings.items
     .filter((f) => f.severity !== PASS)
     .map((f) => ({
-      ruleId: `agent-config/${f.category.toLowerCase()}`,
+      ruleId: `agent-pipx/${f.category.toLowerCase()}`,
       level: SARIF_LEVEL[f.severity],
       message: { text: f.message },
       locations: f.file
@@ -58,7 +58,7 @@ export function renderSarif(findings, repo) {
       $schema: 'https://json.schemastore.org/sarif-2.1.0.json',
       runs: [
         {
-          tool: { driver: { name: 'agent-config', informationUri: 'https://github.com/kyizinlatt/agent-config' } },
+          tool: { driver: { name: 'agent-pipx', informationUri: 'https://github.com/kyizinlatt/agent-pipx' } },
           results,
         },
       ],
@@ -73,7 +73,7 @@ export function renderSarif(findings, repo) {
 export function renderReport(findings, repo) {
   const json = renderJson(findings, repo);
   return [
-    '# agent-config report',
+    '# agent-pipx report',
     '',
     `Repository: ${repo}`,
     '',

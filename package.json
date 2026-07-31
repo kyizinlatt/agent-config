@@ -17,7 +17,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
-    "agent-config": "bin/agent-config.js"
+    "agent-pipx": "bin/agent-pipx.js"
   },
   "engines": {
     "node": ">=18"
@@ -38,10 +38,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kyizinlatt/agent-config.git"
+    "url": "git+https://github.com/kyizinlatt/agent-pipx.git"
   },
-  "homepage": "https://github.com/kyizinlatt/agent-config#readme",
+  "homepage": "https://github.com/kyizinlatt/agent-pipx#readme",
   "bugs": {
-    "url": "https://github.com/kyizinlatt/agent-config/issues"
+    "url": "https://github.com/kyizinlatt/agent-pipx/issues"
   }
 }

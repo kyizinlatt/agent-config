@@ -1,4 +1,4 @@
-# agent-config
+# agent-pipx
 
 > This file is the single source of truth for AI coding agents working on this repo. Every tool
 > (Codex, Cursor, Gemini, Kimi, Antigravity) reads it directly; Claude Code reads it via a
@@ -6,7 +6,7 @@
 
 ## Project
 
-`agent-config` — a zero-dependency Node CLI that audits a repository's AI-agent configuration
+`agent-pipx` — a zero-dependency Node CLI that audits a repository's AI-agent configuration
 (config, rules, styles, environment) against the `AGENTS.md` standard, for any coding agent.
 Package manager: npm.
 
@@ -14,12 +14,12 @@ Package manager: npm.
 
 - Node.js ≥ 18, ES modules (`"type": "module"`)
 - **No runtime dependencies** — Node built-ins only (`fs`, `path`, `child_process`, `node:test`)
-- CLI entry `bin/agent-config.js` → `src/cli.js`; checks in `src/checks/`; tool knowledge in
+- CLI entry `bin/agent-pipx.js` → `src/cli.js`; checks in `src/checks/`; tool knowledge in
   `adapters/tools.js`
 
 ## Commands
 
-- Run: `node bin/agent-config.js check` (or `report`, `init`)
+- Run: `node bin/agent-pipx.js check` (or `report`, `init`)
 - Test: `node --test`
 - Package dry-run: `npm pack --dry-run`
 

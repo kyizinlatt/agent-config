@@ -6,8 +6,8 @@
 #   install-harness.sh <repo-path> --update
 #
 #   --pack    core-only if omitted; otherwise overlays harness/packs/<name>
-#   --mode    link   (default) symlink hooks/commands/tools/skills/agents back to agent-config
-#             vendor copy them in, so the repo's .claude/ resolves without agent-config present
+#   --mode    link   (default) symlink hooks/commands/tools/skills/agents back to agent-pipx
+#             vendor copy them in, so the repo's .claude/ resolves without agent-pipx present
 #   --update  re-run the install using the pack and mode recorded in the repo's
 #             .claude/.harness-manifest (refreshes a vendored repo to the current harness)
 #
@@ -136,7 +136,7 @@ seed() {
 [ -f "$TEMPLATE_DIR/PROGRESS.md.tmpl" ] && seed "$TEMPLATE_DIR/PROGRESS.md.tmpl" "$repo/PROGRESS.md"
 
 # Manifest — record what was installed so `--update` can refresh it later. Version is the
-# agent-config commit the harness was installed from (falls back to a date when not a checkout).
+# agent-pipx commit the harness was installed from (falls back to a date when not a checkout).
 harness_version=$(git -C "$HARNESS_DIR" rev-parse --short HEAD 2>/dev/null || date +%Y%m%d)
 jq -n --arg mode "$mode" --arg pack "${pack:-core-only}" \
       --arg version "$harness_version" --arg at "$(date +%Y-%m-%dT%H:%M:%S%z)" \

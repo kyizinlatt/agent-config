@@ -3,8 +3,8 @@
 A reusable, rule-governed environment for **Claude Code**. Any repository — any stack — can link
 this harness and immediately run under the same guardrails, workflows, and orchestration.
 
-This ships **inside the `agent-config` tool** as its optional Claude Code integration. The
-`agent-config` checker itself is tool-neutral and works for any agent; this harness adds the
+This ships **inside the `agent-pipx` tool** as its optional Claude Code integration. The
+`agent-pipx` checker itself is tool-neutral and works for any agent; this harness adds the
 hooks, commands, and subagents that are specific to Claude Code.
 
 ## Layers
@@ -23,7 +23,7 @@ The harness is four layers. A project consumes the layers it needs.
 
 ## Config checking
 
-`/config-check` and the `config-auditor` subagent both drive the `agent-config` CLI:
+`/config-check` and the `config-auditor` subagent both drive the `agent-pipx` CLI:
 
 ```
 npx agent-pipx check      # human summary + exit 0/1/2 (CI-ready)
@@ -84,5 +84,5 @@ seeds a thin `AGENTS.md` + `PROGRESS.md` from `project-template/` if absent (nev
 - Not a replacement for a project's own `AGENTS.md` — the harness enforces and automates; the
   project declares its stack, domain rules, and release policy.
 - Not tool-neutral machinery — hooks/commands/agents target Claude Code. The tool-neutral checker
-  is the `agent-config` CLI one level up.
+  is the `agent-pipx` CLI one level up.
 - Not a secret store, CI system, or deploy tool. It guards those actions; it does not perform them.

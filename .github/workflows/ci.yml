@@ -29,12 +29,12 @@ jobs:
 
       # Dogfood: the tool checks its own repo. Advisory warnings (exit 1) are fine;
       # only a real failure (exit 2) should break CI.
-      - name: Self-check (agent-config audits its own repo)
+      - name: Self-check (agent-pipx audits its own repo)
         run: |
           code=0
-          node bin/agent-config.js check || code=$?
+          node bin/agent-pipx.js check || code=$?
           if [ "$code" -ge 2 ]; then
-            echo "agent-config reported failures (exit $code)"
+            echo "agent-pipx reported failures (exit $code)"
             exit 1
           fi
           echo "self-check ok (exit $code)"

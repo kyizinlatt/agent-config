@@ -1,6 +1,6 @@
 # Security & privacy
 
-`agent-config` is designed to be safe to run on any repository, including private and
+`agent-pipx` is designed to be safe to run on any repository, including private and
 work codebases. These properties are enforced by tests (`test/safety.test.js`).
 
 ## What it does not do
@@ -15,11 +15,11 @@ work codebases. These properties are enforced by tests (`test/safety.test.js`).
 
 ## What writes (only `init` and `fix`)
 
-`agent-config init` scaffolds a starter `AGENTS.md` and, for Claude Code / Gemini, a thin bridge
+`agent-pipx init` scaffolds a starter `AGENTS.md` and, for Claude Code / Gemini, a thin bridge
 file. It **only ever creates files that do not already exist**, and it prints every file it
 creates. It will never overwrite or edit an existing `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md`.
 
-`agent-config fix` applies only safe, mechanical remediations (e.g. rewriting Gemini's
+`agent-pipx fix` applies only safe, mechanical remediations (e.g. rewriting Gemini's
 unresolvable `@~/…` import). It is a **dry run unless you pass `--yes`**, it **backs up any file
 it changes to `*.bak`** before writing, and it prints every change. It never merges, deletes, or
 guesses at your content — content drift is reported for you to resolve by hand.

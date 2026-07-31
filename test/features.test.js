@@ -50,7 +50,7 @@ test('SARIF: valid 2.1.0 shape, passes omitted, warn/fail mapped', () => {
   const f = runChecks(repo);
   const sarif = JSON.parse(renderSarif(f, repo));
   assert.equal(sarif.version, '2.1.0');
-  assert.equal(sarif.runs[0].tool.driver.name, 'agent-config');
+  assert.equal(sarif.runs[0].tool.driver.name, 'agent-pipx');
   assert.ok(sarif.runs[0].results.every((r) => ['error', 'warning'].includes(r.level)), 'only error/warning levels');
 });
 

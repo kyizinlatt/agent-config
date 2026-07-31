@@ -1,4 +1,4 @@
-// CLI dispatch for `agent-config`. Commands: check (default) | report | init.
+// CLI dispatch for `agent-pipx`. Commands: check (default) | report | init.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,15 +16,15 @@ import { doFix } from './fix.js';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PKG_ROOT = path.dirname(HERE);
 
-const HELP = `agent-config — audit a repo's AI-agent configuration against the AGENTS.md standard.
+const HELP = `agent-pipx — audit a repo's AI-agent configuration against the AGENTS.md standard.
 
 Usage:
-  agent-config [check] [--path DIR] [--json] [--sarif] [--strict]
+  agent-pipx [check] [--path DIR] [--json] [--sarif] [--strict]
                                                Run secrets/config/rules/styles/environment checks
-  agent-config report [--path DIR]             Findings + a judgement prompt for your agent
-  agent-config fix [--yes] [--path DIR]        Safely remediate mechanical issues (dry-run without --yes)
-  agent-config init [--tool ID] [--path DIR]   Scaffold AGENTS.md (SSOT) + a tool bridge
-  agent-config --version | --help
+  agent-pipx report [--path DIR]             Findings + a judgement prompt for your agent
+  agent-pipx fix [--yes] [--path DIR]        Safely remediate mechanical issues (dry-run without --yes)
+  agent-pipx init [--tool ID] [--path DIR]   Scaffold AGENTS.md (SSOT) + a tool bridge
+  agent-pipx --version | --help
 
 Flags:
   --json     machine-readable findings

@@ -1,4 +1,4 @@
-# agent-config
+# agent-pipx
 
 Audit a repository's **AI-agent configuration** — config, rules, styles, environment — against the
 [`AGENTS.md`](https://agents.md) standard. Works for whatever coding agent your team uses: Claude
@@ -8,7 +8,6 @@ Code, Codex, Kimi, Cursor, Antigravity, Gemini, Copilot.
 npx agent-pipx
 ```
 
-Published on npm as **`agent-pipx`**; the command it installs is **`agent-config`**.
 Zero dependencies, no API key, runs offline.
 
 ## Why
@@ -16,30 +15,30 @@ Zero dependencies, no API key, runs offline.
 Every agent tool has its own instruction files — `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`,
 `.agents/rules/` — but they should all express **one** set of rules. `AGENTS.md` is the emerging
 cross-tool standard (stewarded by the Linux Foundation's Agentic AI Foundation) that most tools now
-read natively. `agent-config` checks that your repo has a single source of truth and that every
+read natively. `agent-pipx` checks that your repo has a single source of truth and that every
 tool-specific file **bridges to it** instead of drifting into a second, conflicting copy.
 
 ## Install
 
 ```sh
-npm install -g agent-pipx        # then run:  agent-config
+npm install -g agent-pipx        # then run:  agent-pipx
 # or, no install:
 npx agent-pipx
 ```
 
-Requires Node ≥ 18. (npm package: `agent-pipx` · command: `agent-config`.)
+Requires Node ≥ 18.
 
 ## Usage
 
 ```sh
-agent-config                 # check the current repo (human summary, exit 0/1/2)
-agent-config check --json    # machine-readable findings
-agent-config check --sarif   # SARIF 2.1.0 for GitHub code scanning
-agent-config check --strict  # treat warnings as failures (exit 2) — good for CI
-agent-config report          # findings + a judgement prompt for your agent to act on
-agent-config fix             # dry-run safe fixes; add --yes to apply (backs up originals)
-agent-config init            # scaffold AGENTS.md + a bridge file for your detected tool(s)
-agent-config init --tool claude
+agent-pipx                 # check the current repo (human summary, exit 0/1/2)
+agent-pipx check --json    # machine-readable findings
+agent-pipx check --sarif   # SARIF 2.1.0 for GitHub code scanning
+agent-pipx check --strict  # treat warnings as failures (exit 2) — good for CI
+agent-pipx report          # findings + a judgement prompt for your agent to act on
+agent-pipx fix             # dry-run safe fixes; add --yes to apply (backs up originals)
+agent-pipx init            # scaffold AGENTS.md + a bridge file for your detected tool(s)
+agent-pipx init --tool claude
 ```
 
 Exit codes: `0` pass · `1` warnings · `2` failures — drop it into CI or a pre-commit hook.
