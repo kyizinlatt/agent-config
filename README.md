@@ -8,7 +8,8 @@ Code, Codex, Kimi, Cursor, Antigravity, Gemini, Copilot.
 npx agent-pipx
 ```
 
-Zero dependencies, no API key, runs offline.
+Zero dependencies, no API key. `check` / `report` / `init` / `fix` run fully offline;
+`upgrade` is the opt-in exception (queries npm).
 
 ## Why
 
@@ -38,7 +39,7 @@ agent-pipx report          # status + fix cards + judgement + agent prompt
 agent-pipx fix             # dry-run safe fixes; add --yes to apply (backs up originals)
 agent-pipx init            # scaffold AGENTS.md + a bridge file for your detected tool(s)
 agent-pipx init --tool claude
-agent-pipx upgrade         # check npm for a newer release; add --yes to install globally
+agent-pipx upgrade         # query npm for a newer release (always network); --yes installs globally
 ```
 
 Exit codes: `0` pass · `1` warnings · `2` failures — drop it into CI or a pre-commit hook.
@@ -80,18 +81,18 @@ link. The `/config-check` command and `config-auditor` subagent drive this same 
 
 ## Privacy & safety
 
-Safe to run on any repo, including private ones — and enforced by tests:
+Safe to run on any repo, including private ones — enforced by tests (`test/safety.test.js`):
 
-- **No network, no telemetry** for `check` / `report` / `init` / `fix`. Zero runtime dependencies;
-  your code never leaves your machine. (`upgrade` is the opt-in exception — it queries npm.)
-- **No code execution** for those commands. Installed CLIs are detected by a `PATH` scan, not by
-  executing anything. (`upgrade --yes` may run `npm install -g`.)
-- **`check` and `report` are read-only.** They never create, modify, or delete a file.
-- **`init` only creates missing files**; **`fix` only writes with `--yes`** and always backs up
-  the original to `*.bak` first. Neither ever silently overwrites your files.
-- Findings report only counts, paths, and messages — never your file contents.
+| Guarantee | Detail |
+|---|---|
+| **Offline by default** | `check` / `report` / `init` / `fix` make zero network requests. Zero runtime deps. |
+| **Opt-in network** | Only `upgrade` contacts npm (`npm view`; `--yes` may `npm install -g`). |
+| **No silent code execution** | Offline commands never spawn a shell. CLIs are detected via a `PATH` scan. |
+| **Read-only audit** | `check` and `report` never create, modify, or delete a file. |
+| **Explicit writes only** | `init` creates missing files only; `fix` writes only with `--yes` (+ `*.bak`). |
+| **No content leaks** | Findings report counts, paths, and messages — never your file contents. |
 
-See [SECURITY.md](SECURITY.md) for details.
+See [SECURITY.md](SECURITY.md) for the full policy (including CI Trusted Publishing).
 
 ## License
 

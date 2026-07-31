@@ -26,7 +26,7 @@ Usage:
   agent-pipx report [--path DIR]             status + fix cards + judgement + agent prompt
   agent-pipx fix [--yes] [--path DIR]        Safely remediate mechanical issues (dry-run without --yes)
   agent-pipx init [--tool ID] [--path DIR]   Scaffold AGENTS.md (SSOT) + a tool bridge
-  agent-pipx upgrade [--yes]                 Check npm for a newer agent-pipx (apply with --yes)
+  agent-pipx upgrade [--yes]                 Query npm for a newer release (network); --yes installs -g
   agent-pipx --version | --help
 
 Flags:

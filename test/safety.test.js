@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { runChecks, run } from '../src/cli.js';
 
 // Snapshot every file under dir as path → content, so we can prove nothing changed.
@@ -71,4 +72,26 @@ test('init only creates the files it announces, nothing else', async () => {
   await run(['init', '--tool', 'claude', '--path', repo]);
   const after = Object.keys(snapshot(repo)).sort();
   assert.deepEqual(after, ['AGENTS.md', 'CLAUDE.md'], 'init --tool claude creates exactly AGENTS.md + CLAUDE.md');
+});
+
+test('only upgrade.js may spawn processes (opt-in network surface)', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const offenders = [];
+  const stack = [path.join(root, 'src'), path.join(root, 'bin'), path.join(root, 'adapters')];
+  while (stack.length) {
+    const cur = stack.pop();
+    for (const e of fs.readdirSync(cur, { withFileTypes: true })) {
+      const full = path.join(cur, e.name);
+      if (e.isDirectory()) {
+        stack.push(full);
+        continue;
+      }
+      if (!/\.js$/.test(e.name)) continue;
+      const rel = path.relative(root, full);
+      if (rel === path.join('src', 'upgrade.js')) continue;
+      const text = fs.readFileSync(full, 'utf8');
+      if (/node:child_process|spawnSync|execSync|execFileSync/.test(text)) offenders.push(rel);
+    }
+  }
+  assert.deepEqual(offenders, [], `spawn/exec must stay in src/upgrade.js only; found: ${offenders.join(', ')}`);
 });
