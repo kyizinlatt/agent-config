@@ -9,15 +9,15 @@ const TIPS = [
   },
   {
     re: /core hook .+ not wired/i,
-    tip: 'Re-run the harness installer (`claude-harness/install-harness.sh`) so guard-secrets / guard-push / check-hygiene are wired in `.claude/settings.json`.',
+    tip: 'Re-run the harness installer (`claude-harness/install-harness.sh`) so the core hooks are wired in Claude settings.',
   },
   {
     re: /settings\.json is missing/i,
-    tip: 'Add `.claude/settings.json` (or remove an unused `.claude/` dir). For the optional harness, run `claude-harness/install-harness.sh`.',
+    tip: 'Add Claude settings under `.claude/` (or remove an unused `.claude/` dir). Optional: `claude-harness/install-harness.sh`.',
   },
   {
     re: /settings\.json is not valid JSON/i,
-    tip: 'Fix JSON syntax in `.claude/settings.json` (trailing commas, comments, and unquoted keys are invalid).',
+    tip: 'Fix syntax in Claude settings under `.claude/` (no trailing commas, comments, or unquoted keys).',
   },
   {
     re: /dangling symlink/i,

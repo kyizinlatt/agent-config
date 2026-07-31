@@ -120,8 +120,10 @@ test('report: CLI UI, no JSON dump', async () => {
     console.log = orig;
   }
   assert.match(out, /agent-pipx report/);
-  assert.match(out, /How to fix/);
-  assert.match(out, /Needs judgement|Copy-paste prompt/);
+  assert.match(out, /\bFix\b/);
+  assert.match(out, /Judgement/);
+  assert.match(out, /Agent prompt/);
+  assert.match(out, /Status/);
   assert.doesNotMatch(out, /```json/);
   assert.doesNotMatch(out, /"summary"\s*:/);
 });

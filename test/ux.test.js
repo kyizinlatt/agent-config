@@ -48,13 +48,16 @@ test('human output includes Checked summary', () => {
   assert.match(out, /Environment/);
 });
 
-test('report includes How to fix for warnings', () => {
+test('report includes Fix cards for warnings', () => {
   const repo = mkrepo({
     'AGENTS.md': AGENTS,
     'package.json': '{"name":"x","dependencies":{"left-pad":"1.0.0"}}\n',
   });
   const out = renderReport(runChecks(repo), repo);
-  assert.match(out, /How to fix/);
+  assert.match(out, /\bFix\b/);
+  assert.match(out, /Status/);
+  assert.match(out, /Judgement/);
+  assert.match(out, /Agent prompt/);
   assert.match(out, /no lockfile|Commit the lockfile/i);
   assert.match(out, /Checked: Secrets/);
 });

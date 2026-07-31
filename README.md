@@ -35,7 +35,7 @@ agent-pipx                 # check the current repo (live progress + summary, ex
 agent-pipx check --json    # machine-readable findings
 agent-pipx check --sarif   # SARIF 2.1.0 for GitHub code scanning
 agent-pipx check --strict  # treat warnings as failures (exit 2) — good for CI
-agent-pipx report          # findings + how-to-fix tips + judgement prompt
+agent-pipx report          # status + fix cards + judgement + agent prompt
 agent-pipx fix             # dry-run safe fixes; add --yes to apply (backs up originals)
 agent-pipx init            # scaffold AGENTS.md + a bridge file for your detected tool(s)
 agent-pipx init --tool claude
