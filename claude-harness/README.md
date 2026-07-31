@@ -26,8 +26,8 @@ The harness is four layers. A project consumes the layers it needs.
 `/config-check` and the `config-auditor` subagent both drive the `agent-config` CLI:
 
 ```
-npx agent-config check      # human summary + exit 0/1/2 (CI-ready)
-npx agent-config report     # JSON findings + a judgement prompt for the agent
+npx agent-pipx check      # human summary + exit 0/1/2 (CI-ready)
+npx agent-pipx report     # JSON findings + a judgement prompt for the agent
 ```
 
 The CLI does the deterministic pass (adapters bridge to `AGENTS.md`, settings/hooks valid,

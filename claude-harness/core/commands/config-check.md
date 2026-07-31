@@ -8,11 +8,11 @@ Audit how well this repository conforms to the AGENTS.md standard. Target: $ARGU
 1. **Deterministic pass.** Run the checker:
 
    ```
-   npx agent-config report
+   npx agent-pipx report
    ```
 
    `report` prints the mechanical findings as JSON plus a judgement prompt. Every `fail` is a
-   defect; every `warn` needs judgement. (Plain `npx agent-config check` gives the human summary
+   defect; every `warn` needs judgement. (Plain `npx agent-pipx check` gives the human summary
    and an exit code for CI.)
 
 2. **Judgement pass.** Follow the prompt `report` emits, or delegate to the `config-auditor`

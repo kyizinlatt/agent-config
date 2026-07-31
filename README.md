@@ -5,9 +5,10 @@ Audit a repository's **AI-agent configuration** — config, rules, styles, envir
 Code, Codex, Kimi, Cursor, Antigravity, Gemini, Copilot.
 
 ```sh
-npx agent-config
+npx agent-pipx
 ```
 
+Published on npm as **`agent-pipx`**; the command it installs is **`agent-config`**.
 Zero dependencies, no API key, runs offline.
 
 ## Why
@@ -21,12 +22,12 @@ tool-specific file **bridges to it** instead of drifting into a second, conflict
 ## Install
 
 ```sh
-npm install -g agent-config      # then: agent-config
+npm install -g agent-pipx        # then run:  agent-config
 # or, no install:
-npx agent-config
+npx agent-pipx
 ```
 
-Requires Node ≥ 18.
+Requires Node ≥ 18. (npm package: `agent-pipx` · command: `agent-config`.)
 
 ## Usage
 

@@ -13,7 +13,7 @@ category. You never edit — you produce a report the user (or main agent) acts 
 1. **Deterministic pass first.** Run the checker and read its JSON:
 
    ```
-   npx agent-config check --json
+   npx agent-pipx check --json
    ```
 
    Treat every `fail` as a defect and every `warn` as something to judge in context.
