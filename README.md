@@ -21,8 +21,7 @@ tool-specific file **bridges to it** instead of drifting into a second, conflict
 ## Install
 
 ```sh
-npm install -g agent-pipx        # then run:  agent-pipx
-# or, no install:
+npm install -g agent-pipx
 npx agent-pipx
 ```
 
