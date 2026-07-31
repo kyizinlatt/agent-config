@@ -1,0 +1,74 @@
+// Safety guarantees, enforced so they cannot silently regress:
+//   1. `check` and `report` NEVER modify, create, or delete anything in the target repo.
+//   2. `init` only CREATES missing files — it never overwrites or edits existing ones.
+// These back the tool's privacy promise: it does not touch a user's files without their say-so.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { runChecks, run } from '../src/cli.js';
+
+// Snapshot every file under dir as path → content, so we can prove nothing changed.
+function snapshot(dir) {
+  const out = {};
+  const stack = [dir];
+  while (stack.length) {
+    const cur = stack.pop();
+    for (const e of fs.readdirSync(cur, { withFileTypes: true })) {
+      const full = path.join(cur, e.name);
+      if (e.isDirectory()) stack.push(full);
+      else out[path.relative(dir, full)] = fs.readFileSync(full, 'utf8');
+    }
+  }
+  return out;
+}
+
+function mkrepo(files) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-safety-'));
+  for (const [rel, content] of Object.entries(files)) {
+    const full = path.join(dir, rel);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, content);
+  }
+  return dir;
+}
+
+test('check writes nothing to the target repo', () => {
+  const repo = mkrepo({
+    'AGENTS.md': '# rules\n\nreal content that is clearly long enough here.\n',
+    'CLAUDE.md': '@AGENTS.md\n',
+    'src/app.ts': 'export const x: any = 1; console.log(x);\n',
+  });
+  const before = snapshot(repo);
+  runChecks(repo);
+  const after = snapshot(repo);
+  assert.deepEqual(after, before, 'check must not add, remove, or modify any file');
+});
+
+test('report writes nothing to the target repo', async () => {
+  const repo = mkrepo({ 'AGENTS.md': '# rules\n\nlong enough content to pass here.\n' });
+  const before = snapshot(repo);
+  await run(['report', '--path', repo]);
+  const after = snapshot(repo);
+  assert.deepEqual(after, before, 'report must be read-only');
+});
+
+test('init never overwrites existing files', async () => {
+  const repo = mkrepo({
+    'AGENTS.md': '# MY OWN RULES — do not touch\n',
+    'CLAUDE.md': '# my own claude file, not an import\n',
+  });
+  const before = snapshot(repo);
+  await run(['init', '--tool', 'claude', '--path', repo]);
+  const after = snapshot(repo);
+  assert.equal(after['AGENTS.md'], before['AGENTS.md'], 'existing AGENTS.md must be preserved verbatim');
+  assert.equal(after['CLAUDE.md'], before['CLAUDE.md'], 'existing CLAUDE.md must be preserved verbatim');
+});
+
+test('init only creates the files it announces, nothing else', async () => {
+  const repo = mkrepo({});
+  await run(['init', '--tool', 'claude', '--path', repo]);
+  const after = Object.keys(snapshot(repo)).sort();
+  assert.deepEqual(after, ['AGENTS.md', 'CLAUDE.md'], 'init --tool claude creates exactly AGENTS.md + CLAUDE.md');
+});

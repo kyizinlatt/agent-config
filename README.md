@@ -69,6 +69,21 @@ The [`claude-harness/`](claude-harness/) directory ships an optional Claude Code
 link. The `/config-check` command and `config-auditor` subagent drive this same CLI. See
 [claude-harness/README.md](claude-harness/README.md).
 
+## Privacy & safety
+
+Safe to run on any repo, including private ones — and enforced by tests:
+
+- **No network, no telemetry.** Zero runtime dependencies and zero network calls; your code never
+  leaves your machine.
+- **No code execution.** It never runs shell commands or `eval`; installed CLIs are detected by a
+  `PATH` scan, not by executing anything.
+- **`check` and `report` are read-only.** They never create, modify, or delete a file.
+- **`init` only creates missing files** and prints each one — it never overwrites your existing
+  `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md`.
+- Findings report only counts, paths, and messages — never your file contents.
+
+See [SECURITY.md](SECURITY.md) for details.
+
 ## License
 
-MIT.
+See [LICENSE](LICENSE).

@@ -14,7 +14,7 @@
     "linter",
     "config"
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "bin": {
     "agent-config": "bin/agent-config.js"
@@ -29,6 +29,7 @@
     "templates/",
     "claude-harness/",
     "README.md",
+    "SECURITY.md",
     "LICENSE"
   ],
   "scripts": {
@@ -37,5 +38,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kyizinlatt/agent-config.git"
+  },
+  "homepage": "https://github.com/kyizinlatt/agent-config#readme",
+  "bugs": {
+    "url": "https://github.com/kyizinlatt/agent-config/issues"
   }
 }
