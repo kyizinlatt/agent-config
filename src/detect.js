@@ -67,6 +67,30 @@ export function isFile(p) {
   }
 }
 
+/** True only for a non-symlink regular file (lstat). Use before writes / untrusted reads. */
+export function isRegularFile(p) {
+  try {
+    return fs.lstatSync(p).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolve `abs` and ensure it stays inside `repo` (after realpath). Throws if outside or missing.
+ * Symlinks: follows for the containment check — callers that must not write through links
+ * should also require isRegularFile / !isSymlink first.
+ */
+export function assertInsideRepo(repo, abs) {
+  const root = fs.realpathSync(repo);
+  const real = fs.realpathSync(abs);
+  const rel = path.relative(root, real);
+  if (rel.startsWith(`..${path.sep}`) || rel === '..' || path.isAbsolute(rel)) {
+    throw new Error(`path escapes repo: ${path.relative(repo, abs) || abs}`);
+  }
+  return real;
+}
+
 export function isDir(p) {
   try {
     return fs.statSync(p).isDirectory();

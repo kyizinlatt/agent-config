@@ -2,12 +2,30 @@
 // guesses at your content: it backs up any file it touches (.bak) and, without --yes, does a
 // dry-run that just prints what it would do. Content drift (a CLAUDE.md with its own rules) is
 // reported as manual, never auto-rewritten.
+//
+// Writes never follow symlinks (CWE-59): only regular files whose realpath stays inside the repo.
 import fs from 'node:fs';
 import path from 'node:path';
 import { agentsMdPath } from './ssot.js';
-import { isFile, readText } from './detect.js';
+import { assertInsideRepo, exists, isRegularFile, isSymlink, readText } from './detect.js';
 
 const IMPORT_TILDE = /^@~\/.*$/m;
+
+/** Write `content` to `abs` only if the path is a regular file (or new) inside `repo`. */
+function writeRepoFile(repo, abs, content) {
+  if (isSymlink(abs)) {
+    throw new Error(`${path.basename(abs)} is a symlink — refusing to write through it`);
+  }
+  if (exists(abs) && !isRegularFile(abs)) {
+    throw new Error(`refusing to write non-regular file: ${path.basename(abs)}`);
+  }
+  if (exists(abs)) {
+    assertInsideRepo(repo, abs);
+  } else {
+    assertInsideRepo(repo, path.dirname(abs));
+  }
+  fs.writeFileSync(abs, content);
+}
 
 // Each fixer: { detect(repo) -> {file, describe, apply()} | null }. Add more over time.
 function fixers(repo) {
@@ -15,8 +33,9 @@ function fixers(repo) {
 
   // Gemini's @import cannot expand ~ — rewrite the unresolvable @~/… line to a working relative
   // import of AGENTS.md. Only when AGENTS.md actually exists to point at.
+  // Skip symlinks: writeFileSync would otherwise overwrite the link target outside the repo.
   const gemini = path.join(repo, 'GEMINI.md');
-  if (isFile(gemini) && agentsMdPath(repo)) {
+  if (isRegularFile(gemini) && agentsMdPath(repo)) {
     const content = readText(gemini);
     if (IMPORT_TILDE.test(content)) {
       list.push({
@@ -24,8 +43,9 @@ function fixers(repo) {
         describe: 'rewrite unresolvable @~/… import → @./AGENTS.md (Gemini cannot expand ~)',
         apply() {
           const fixed = content.replace(IMPORT_TILDE, '@./AGENTS.md');
-          fs.copyFileSync(gemini, gemini + '.bak');
-          fs.writeFileSync(gemini, fixed);
+          // Read→write backup (not copyFileSync) so a symlink .bak cannot redirect the copy.
+          writeRepoFile(repo, gemini + '.bak', content);
+          writeRepoFile(repo, gemini, fixed);
         },
       });
     }

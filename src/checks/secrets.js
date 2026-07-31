@@ -5,7 +5,7 @@
 // It reports the SECRET TYPE and line — never the secret value itself.
 import fs from 'node:fs';
 import path from 'node:path';
-import { isDir, isFile, walk } from '../detect.js';
+import { isDir, isRegularFile, walk } from '../detect.js';
 
 const PATTERNS = [
   [/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----/, 'private key block'],
@@ -30,7 +30,8 @@ export function checkSecrets(repo, findings) {
   const files = [];
   for (const rel of TARGET_FILES) {
     const abs = path.join(repo, rel);
-    if (isFile(abs)) files.push(abs);
+    // Regular files only — do not follow symlinks out of the repo (CWE-59).
+    if (isRegularFile(abs)) files.push(abs);
   }
   for (const rel of TARGET_DIRS) {
     const abs = path.join(repo, rel);
