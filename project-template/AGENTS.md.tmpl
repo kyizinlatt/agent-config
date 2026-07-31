@@ -1,0 +1,37 @@
+# Agent instructions — {{PROJECT_NAME}}
+
+> Project-specific rules and the single source of truth for AI coding agents in this repo.
+> Every tool reads this file; the nearest, more-specific rules take precedence.
+
+## Project
+
+{{PROJECT_NAME}} — [one-line description].
+Package manager: [pnpm | npm | pip | swift | …].
+
+## Stack
+
+- [Framework + language]
+- [UI / entry layer]
+- [State / data]
+- [Backend / DB]
+- [Hosting / runtime]
+
+## Commands
+
+- Install: `[…]`
+- Dev: `[…]`
+- Test: `[…]`
+- Build: `[…]`
+- Lint / typecheck: `[…]`
+
+## Rules
+
+- [Domain rule or invariant the agent must not weaken]
+- [Where business logic lives; what stays out of it]
+- [Release / branch / push policy specific to this repo]
+
+## Claude Code harness (optional)
+
+If this repo links the Claude Code harness, guardrails and workflows are inherited — do not
+duplicate them here. Add only what is specific to {{PROJECT_NAME}}.
+Pack: `[core only | web-ts | swiftui]`.

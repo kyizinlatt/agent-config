@@ -1,0 +1,129 @@
+// CONFIG checks: per-tool adapters bridge to the AGENTS.md SSOT, and (for Claude Code) the
+// .claude/settings.json + hooks are valid and live. Ports the logic from the original
+// check-config.sh and adds multi-tool SSOT/drift verification.
+import fs from 'node:fs';
+import path from 'node:path';
+import { detectAdapters, exists, isDir, isDangling, readlink, readText, walk } from '../detect.js';
+import { agentsMdPath, verifyBridge } from '../ssot.js';
+
+const CORE_HOOKS = ['guard-secrets.sh', 'guard-push.sh', 'check-hygiene.sh'];
+
+export function checkConfig(repo, findings) {
+  const agents = agentsMdPath(repo);
+
+  // 1. Per-tool adapter → SSOT bridge verification.
+  const adapters = detectAdapters(repo);
+  if (adapters.length === 0) {
+    findings.warn('Config', 'no agent-tool configuration detected (CLAUDE.md, AGENTS.md, .cursor/rules, …)');
+  }
+  for (const entry of adapters) verifyBridge(repo, entry, agents, findings);
+
+  // 2. Claude Code settings + hooks (only when a .claude/ dir exists).
+  const claudeDir = path.join(repo, '.claude');
+  if (isDir(claudeDir)) {
+    checkClaudeDir(repo, claudeDir, findings);
+  }
+}
+
+function checkClaudeDir(repo, claudeDir, findings) {
+  // Dangling symlinks anywhere under .claude/ = a broken link-mode install.
+  let dangling = 0;
+  for (const f of walk(claudeDir).concat(listSymlinkDirs(claudeDir))) {
+    if (isDangling(f)) {
+      findings.fail('Config', `dangling symlink: ${path.relative(repo, f)} → ${readlink(f)}`, path.relative(repo, f));
+      dangling++;
+    }
+  }
+  if (dangling === 0) findings.pass('Config', '.claude/ symlinks resolve (or none present)');
+
+  const settingsPath = path.join(claudeDir, 'settings.json');
+  if (!exists(settingsPath)) {
+    findings.warn('Config', '.claude/ exists but settings.json is missing');
+    return;
+  }
+
+  let settings;
+  try {
+    settings = JSON.parse(readText(settingsPath));
+  } catch {
+    findings.fail('Config', 'settings.json is not valid JSON', '.claude/settings.json');
+    return;
+  }
+  findings.pass('Config', 'settings.json is valid JSON');
+
+  // Every hook command that points into the repo must exist and be executable.
+  const hookCmds = collectHookCommands(settings);
+  for (const cmd of hookCmds) {
+    let script = cmd.split(/\s+/)[0]
+      .replaceAll('${CLAUDE_PROJECT_DIR}', repo)
+      .replaceAll('$CLAUDE_PROJECT_DIR', repo);
+    if (!script.startsWith(repo + path.sep) && !script.startsWith(repo + '/')) continue;
+    const rel = path.relative(repo, script);
+    if (!exists(script)) {
+      findings.fail('Config', `hook script missing: ${rel}`, rel);
+    } else if (!isExecutable(script)) {
+      findings.fail('Config', `hook script not executable: ${rel}`, rel);
+    } else {
+      findings.pass('Config', `hook wired: ${rel}`);
+    }
+  }
+
+  // Baseline: a harness-linked repo should wire the core guards. Only assert when the repo
+  // clearly uses the harness (a manifest, or a known harness hook is wired).
+  const wiredText = hookCmds.join('\n');
+  const looksLikeHarness =
+    exists(path.join(claudeDir, '.harness-manifest')) ||
+    /guard-push\.sh|guard-write\.sh|check-forbidden\.sh|check-swift\.sh/.test(wiredText);
+  if (looksLikeHarness) {
+    for (const hook of CORE_HOOKS) {
+      if (!wiredText.includes(hook)) {
+        findings.warn('Config', `core hook ${hook} not wired (harness baseline) — repo may predate it; re-run install-harness.sh`);
+      }
+    }
+  }
+}
+
+function collectHookCommands(settings) {
+  const out = [];
+  const hooks = settings.hooks || {};
+  for (const event of Object.values(hooks)) {
+    if (!Array.isArray(event)) continue;
+    for (const matcher of event) {
+      for (const h of matcher.hooks || []) {
+        if (h.type === 'command' && h.command) out.push(h.command);
+      }
+    }
+  }
+  return out;
+}
+
+function isExecutable(p) {
+  try {
+    fs.accessSync(p, fs.constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// walk() only returns regular files; symlinked directories won't be traversed, but a symlink to
+// a dir is itself worth dangling-checking. Collect top-level symlink entries under .claude/.
+function listSymlinkDirs(dir) {
+  const out = [];
+  const stack = [dir];
+  while (stack.length) {
+    const cur = stack.pop();
+    let entries;
+    try {
+      entries = fs.readdirSync(cur, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const e of entries) {
+      const full = path.join(cur, e.name);
+      if (e.isSymbolicLink()) out.push(full);
+      else if (e.isDirectory()) stack.push(full);
+    }
+  }
+  return out;
+}

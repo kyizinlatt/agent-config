@@ -1,0 +1,11 @@
+.DS_Store
+*.local.md
+*.backup-*
+
+# Node
+node_modules/
+npm-debug.log*
+*.tgz
+
+# Claude Code machine-local settings (never publish)
+.claude/settings.local.json

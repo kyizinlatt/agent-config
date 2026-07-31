@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(swift build:*)",
+      "Bash(swift test:*)",
+      "Bash(swift run:*)",
+      "Bash(swift package:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(xcrun:*)",
+      "Bash(swiftlint:*)",
+      "Bash(swiftformat:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-swift.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
