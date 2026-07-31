@@ -6,24 +6,30 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   test:
+    # Reads as "Test / Node 18" etc. in the checks UI, so it's clear what each job is.
+    name: Test / Node ${{ matrix.node }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node: [18, 20, 22]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
       # No dependencies to install — the tool is zero-dep.
-      - name: Run tests
+      - name: Unit + safety tests (node --test)
         run: node --test
 
       # Dogfood: the tool checks its own repo. Advisory warnings (exit 1) are fine;
       # only a real failure (exit 2) should break CI.
-      - name: Self-check (agent-config on itself)
+      - name: Self-check (agent-config audits its own repo)
         run: |
           code=0
           node bin/agent-config.js check || code=$?
