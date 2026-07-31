@@ -3,13 +3,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Findings } from './findings.js';
+import { checkSecrets } from './checks/secrets.js';
 import { checkConfig } from './checks/config.js';
 import { checkRules } from './checks/rules.js';
 import { checkStyles } from './checks/styles.js';
 import { checkEnvironment } from './checks/environment.js';
-import { renderHuman, renderJson, renderReport } from './report.js';
+import { renderHuman, renderJson, renderReport, renderSarif } from './report.js';
 import { detectInstalledClis, exists } from './detect.js';
 import { toolById } from '../adapters/tools.js';
+import { doFix } from './fix.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PKG_ROOT = path.dirname(HERE);
@@ -17,16 +19,23 @@ const PKG_ROOT = path.dirname(HERE);
 const HELP = `agent-config — audit a repo's AI-agent configuration against the AGENTS.md standard.
 
 Usage:
-  agent-config [check] [--path DIR] [--json]   Run config/rules/styles/environment checks (default)
+  agent-config [check] [--path DIR] [--json] [--sarif] [--strict]
+                                               Run secrets/config/rules/styles/environment checks
   agent-config report [--path DIR]             Findings + a judgement prompt for your agent
+  agent-config fix [--yes] [--path DIR]        Safely remediate mechanical issues (dry-run without --yes)
   agent-config init [--tool ID] [--path DIR]   Scaffold AGENTS.md (SSOT) + a tool bridge
   agent-config --version | --help
 
-Tools: claude, codex, kimi, cursor, antigravity, gemini, copilot
+Flags:
+  --json     machine-readable findings
+  --sarif    SARIF 2.1.0 output for GitHub code scanning
+  --strict   treat warnings as failures (exit 2)
+
+Tools: claude, codex, kimi, cursor, antigravity, gemini, copilot, windsurf, aider, zed, continue, amazonq, jules
 Exit codes: 0 = pass, 1 = warnings, 2 = failures.`;
 
 function parseArgs(argv) {
-  const opts = { command: 'check', path: process.cwd(), json: false, tool: null };
+  const opts = { command: 'check', path: process.cwd(), json: false, sarif: false, strict: false, yes: false, tool: null };
   const rest = [...argv];
   if (rest[0] && !rest[0].startsWith('-')) {
     opts.command = rest.shift();
@@ -34,6 +43,9 @@ function parseArgs(argv) {
   while (rest.length) {
     const a = rest.shift();
     if (a === '--json') opts.json = true;
+    else if (a === '--sarif') opts.sarif = true;
+    else if (a === '--strict') opts.strict = true;
+    else if (a === '--yes' || a === '-y') opts.yes = true;
     else if (a === '--path') opts.path = path.resolve(rest.shift() || '.');
     else if (a === '--tool') opts.tool = rest.shift();
     else if (a === '--version' || a === '-v') opts.command = 'version';
@@ -45,11 +57,18 @@ function parseArgs(argv) {
 
 export function runChecks(repo) {
   const findings = new Findings();
+  checkSecrets(repo, findings);
   checkConfig(repo, findings);
   checkRules(repo, findings);
   checkStyles(repo, findings);
   checkEnvironment(repo, findings);
   return findings;
+}
+
+// In --strict mode a warning is a failure: exit 2 whenever anything is not a clean pass.
+function exitCode(findings, strict) {
+  if (strict && findings.count('warn') > 0) return 2;
+  return findings.exitCode();
 }
 
 export async function run(argv) {
@@ -69,6 +88,7 @@ export async function run(argv) {
   if (!exists(repo)) throw new Error(`no such directory: ${repo}`);
 
   if (opts.command === 'init') return doInit(repo, opts.tool);
+  if (opts.command === 'fix') return doFix(repo, { apply: opts.yes });
 
   if (opts.command !== 'check' && opts.command !== 'report') {
     throw new Error(`unknown command: ${opts.command}`);
@@ -77,12 +97,14 @@ export async function run(argv) {
   const findings = runChecks(repo);
   if (opts.command === 'report') {
     console.log(renderReport(findings, repo));
+  } else if (opts.sarif) {
+    console.log(renderSarif(findings, repo));
   } else if (opts.json) {
     console.log(renderJson(findings, repo));
   } else {
     console.log(renderHuman(findings, repo));
   }
-  return findings.exitCode();
+  return exitCode(findings, opts.strict);
 }
 
 // Scaffold the SSOT and, for bridge tools, a thin adapter that references it. Never overwrites.

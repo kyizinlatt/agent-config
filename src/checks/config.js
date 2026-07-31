@@ -18,6 +18,14 @@ export function checkConfig(repo, findings) {
   }
   for (const entry of adapters) verifyBridge(repo, entry, agents, findings);
 
+  // Collapse the native readers into one line rather than one per tool.
+  if (agents) {
+    const natives = adapters.filter((e) => e.tool.bridge === 'native').map((e) => e.tool.name);
+    if (natives.length) {
+      findings.pass('Config', `AGENTS.md read natively by: ${natives.join(', ')}`);
+    }
+  }
+
   // 2. Claude Code settings + hooks (only when a .claude/ dir exists).
   const claudeDir = path.join(repo, '.claude');
   if (isDir(claudeDir)) {

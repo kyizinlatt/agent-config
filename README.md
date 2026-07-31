@@ -33,7 +33,10 @@ Requires Node ≥ 18.
 ```sh
 agent-config                 # check the current repo (human summary, exit 0/1/2)
 agent-config check --json    # machine-readable findings
+agent-config check --sarif   # SARIF 2.1.0 for GitHub code scanning
+agent-config check --strict  # treat warnings as failures (exit 2) — good for CI
 agent-config report          # findings + a judgement prompt for your agent to act on
+agent-config fix             # dry-run safe fixes; add --yes to apply (backs up originals)
 agent-config init            # scaffold AGENTS.md + a bridge file for your detected tool(s)
 agent-config init --tool claude
 ```
@@ -44,10 +47,14 @@ Exit codes: `0` pass · `1` warnings · `2` failures — drop it into CI or a pr
 
 | Category | Checks |
 |---|---|
+| **Secrets** | Scans committed config/instruction files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.claude`, `.cursor/rules`, …) for accidentally-committed credentials (AWS/GitHub/Slack/Google/AI keys, private keys). Reports the type and line — never the secret value. |
 | **Config** | Each tool adapter present (CLAUDE.md, GEMINI.md, `.cursor/rules`, `.agents/rules`, …) bridges to `AGENTS.md` by import or symlink — no duplication or drift. `GEMINI.md` doesn't use an unresolvable `@~/…` import. `.cursor/rules` are `.mdc` with frontmatter. `.claude/settings.json` + hooks are valid and live. |
 | **Rules** | `AGENTS.md` exists as the single source of truth, has no leftover template placeholders, isn't empty. Missing SSOT while adapters exist is a failure. |
 | **Styles** | Stack-detected antipattern scan (TypeScript `any`/`console.log`/`@ts-ignore`; Swift `try!`/`as!`/`print`). Advisory. |
 | **Environment** | Which agent CLIs are installed; package manager matches its lockfile; base tooling present. |
+
+Supported tools: Claude Code, Codex, Kimi, Cursor, Antigravity, Gemini, Copilot, Windsurf, Aider,
+Zed, Continue, Amazon Q, Jules.
 
 ## The AGENTS.md model
 
@@ -78,8 +85,8 @@ Safe to run on any repo, including private ones — and enforced by tests:
 - **No code execution.** It never runs shell commands or `eval`; installed CLIs are detected by a
   `PATH` scan, not by executing anything.
 - **`check` and `report` are read-only.** They never create, modify, or delete a file.
-- **`init` only creates missing files** and prints each one — it never overwrites your existing
-  `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md`.
+- **`init` only creates missing files**; **`fix` only writes with `--yes`** and always backs up
+  the original to `*.bak` first. Neither ever silently overwrites your files.
 - Findings report only counts, paths, and messages — never your file contents.
 
 See [SECURITY.md](SECURITY.md) for details.

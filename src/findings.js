@@ -5,7 +5,7 @@ export const PASS = 'pass';
 export const WARN = 'warn';
 export const FAIL = 'fail';
 
-export const CATEGORIES = ['Config', 'Rules', 'Styles', 'Environment'];
+export const CATEGORIES = ['Secrets', 'Config', 'Rules', 'Styles', 'Environment'];
 
 export class Findings {
   constructor() {

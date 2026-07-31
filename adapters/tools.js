@@ -85,6 +85,58 @@ export const TOOLS = [
     bridge: 'native',
     globalPaths: ['~/.copilot/copilot-instructions.md'],
   },
+  // Additional tools on the agents.md official supported-tools list — all read AGENTS.md natively.
+  {
+    id: 'windsurf',
+    name: 'Windsurf',
+    cli: ['windsurf'],
+    projectFiles: ['AGENTS.md', '.windsurf/rules', '.windsurfrules'],
+    rulesDir: '.windsurf/rules',
+    readsAgentsMd: true,
+    bridge: 'native',
+  },
+  {
+    id: 'aider',
+    name: 'Aider',
+    cli: ['aider'],
+    projectFiles: ['AGENTS.md'],
+    readsAgentsMd: true,
+    bridge: 'native',
+  },
+  {
+    id: 'zed',
+    name: 'Zed',
+    cli: ['zed'],
+    projectFiles: ['AGENTS.md'],
+    readsAgentsMd: true,
+    bridge: 'native',
+  },
+  {
+    id: 'continue',
+    name: 'Continue',
+    cli: [],
+    projectFiles: ['AGENTS.md', '.continue/rules'],
+    rulesDir: '.continue/rules',
+    readsAgentsMd: true,
+    bridge: 'native',
+  },
+  {
+    id: 'amazonq',
+    name: 'Amazon Q',
+    cli: ['q'],
+    projectFiles: ['AGENTS.md', '.amazonq/rules'],
+    rulesDir: '.amazonq/rules',
+    readsAgentsMd: true,
+    bridge: 'native',
+  },
+  {
+    id: 'jules',
+    name: 'Jules',
+    cli: [],
+    projectFiles: ['AGENTS.md'],
+    readsAgentsMd: true,
+    bridge: 'native',
+  },
 ];
 
 // Lookup helper.

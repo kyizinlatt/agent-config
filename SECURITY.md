@@ -13,12 +13,16 @@ work codebases. These properties are enforced by tests (`test/safety.test.js`).
 - **No silent edits.** `check` and `report` are strictly **read-only** — they do not create,
   modify, or delete a single file in your repository.
 
-## What `init` writes (the only command that writes)
+## What writes (only `init` and `fix`)
 
 `agent-config init` scaffolds a starter `AGENTS.md` and, for Claude Code / Gemini, a thin bridge
 file. It **only ever creates files that do not already exist**, and it prints every file it
-creates. It will never overwrite or edit an existing `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md` —
-if one is present, it is left exactly as you wrote it.
+creates. It will never overwrite or edit an existing `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md`.
+
+`agent-config fix` applies only safe, mechanical remediations (e.g. rewriting Gemini's
+unresolvable `@~/…` import). It is a **dry run unless you pass `--yes`**, it **backs up any file
+it changes to `*.bak`** before writing, and it prints every change. It never merges, deletes, or
+guesses at your content — content drift is reported for you to resolve by hand.
 
 ## What it reads
 

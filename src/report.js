@@ -39,6 +39,35 @@ export function renderJson(findings, repo) {
   );
 }
 
+// SARIF 2.1.0 for GitHub code scanning. Passes are omitted; warn→warning, fail→error.
+const SARIF_LEVEL = { [FAIL]: 'error', [WARN]: 'warning' };
+export function renderSarif(findings, repo) {
+  const results = findings.items
+    .filter((f) => f.severity !== PASS)
+    .map((f) => ({
+      ruleId: `agent-config/${f.category.toLowerCase()}`,
+      level: SARIF_LEVEL[f.severity],
+      message: { text: f.message },
+      locations: f.file
+        ? [{ physicalLocation: { artifactLocation: { uri: f.file } } }]
+        : [],
+    }));
+  return JSON.stringify(
+    {
+      version: '2.1.0',
+      $schema: 'https://json.schemastore.org/sarif-2.1.0.json',
+      runs: [
+        {
+          tool: { driver: { name: 'agent-config', informationUri: 'https://github.com/kyizinlatt/agent-config' } },
+          results,
+        },
+      ],
+    },
+    null,
+    2,
+  );
+}
+
 // Agent-facing: the deterministic result plus a prompt the project's own agent can act on to do
 // the judgement pass the deterministic checker deliberately does not.
 export function renderReport(findings, repo) {
