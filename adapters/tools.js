@@ -8,6 +8,10 @@
 // bridge:
 //   'native'             → tool reads AGENTS.md directly; the SSOT being present is sufficient.
 //   'import-or-symlink'  → tool reads its own file, which must reference AGENTS.md (no duplication).
+//
+// projectFiles lists tool-SPECIFIC adapter paths only — never AGENTS.md itself. Presence of the
+// SSOT is handled by rules.js / checkConfig separately so we don't pretend every native reader
+// is "configured" just because AGENTS.md exists.
 
 export const SSOT = 'AGENTS.md';
 
@@ -39,7 +43,7 @@ export const TOOLS = [
     name: 'Cursor',
     cli: ['cursor-agent'],
     // Reads AGENTS.md natively AND .cursor/rules/*.mdc — docs: https://cursor.com/docs/context/rules
-    projectFiles: ['AGENTS.md', '.cursor/rules'],
+    projectFiles: ['.cursor/rules'],
     rulesDir: '.cursor/rules',
     rulesExt: '.mdc', // plain .md in this dir is IGNORED by Cursor
     rulesFrontmatter: ['description', 'globs', 'alwaysApply'],
@@ -51,7 +55,7 @@ export const TOOLS = [
     name: 'Google Antigravity',
     cli: [],
     // AGENTS.md support since v1.20.3; workspace rules in .agents/rules/
-    projectFiles: ['AGENTS.md', '.agents/rules'],
+    projectFiles: ['.agents/rules'],
     rulesDir: '.agents/rules',
     readsAgentsMd: true,
     bridge: 'native',
@@ -61,7 +65,7 @@ export const TOOLS = [
     id: 'codex',
     name: 'OpenAI Codex',
     cli: ['codex'],
-    projectFiles: ['AGENTS.md'],
+    projectFiles: [], // AGENTS.md alone; no tool-specific adapter
     readsAgentsMd: true,
     bridge: 'native',
     globalPaths: ['~/.codex/AGENTS.md'],
@@ -71,7 +75,7 @@ export const TOOLS = [
     name: 'Kimi Code',
     cli: ['kimi'],
     // Reads AGENTS.md + .kimi/AGENTS.md (merged root→cwd)
-    projectFiles: ['AGENTS.md', '.kimi/AGENTS.md'],
+    projectFiles: ['.kimi/AGENTS.md'],
     readsAgentsMd: true,
     bridge: 'native',
     globalPaths: ['~/.kimi-code/AGENTS.md', '~/.agents/AGENTS.md'],
@@ -80,7 +84,7 @@ export const TOOLS = [
     id: 'copilot',
     name: 'GitHub Copilot',
     cli: ['copilot'],
-    projectFiles: ['AGENTS.md', '.github/copilot-instructions.md'],
+    projectFiles: ['.github/copilot-instructions.md'],
     readsAgentsMd: true,
     bridge: 'native',
     globalPaths: ['~/.copilot/copilot-instructions.md'],
@@ -90,7 +94,7 @@ export const TOOLS = [
     id: 'windsurf',
     name: 'Windsurf',
     cli: ['windsurf'],
-    projectFiles: ['AGENTS.md', '.windsurf/rules', '.windsurfrules'],
+    projectFiles: ['.windsurf/rules', '.windsurfrules'],
     rulesDir: '.windsurf/rules',
     readsAgentsMd: true,
     bridge: 'native',
@@ -99,7 +103,7 @@ export const TOOLS = [
     id: 'aider',
     name: 'Aider',
     cli: ['aider'],
-    projectFiles: ['AGENTS.md'],
+    projectFiles: [],
     readsAgentsMd: true,
     bridge: 'native',
   },
@@ -107,7 +111,7 @@ export const TOOLS = [
     id: 'zed',
     name: 'Zed',
     cli: ['zed'],
-    projectFiles: ['AGENTS.md'],
+    projectFiles: [],
     readsAgentsMd: true,
     bridge: 'native',
   },
@@ -115,7 +119,7 @@ export const TOOLS = [
     id: 'continue',
     name: 'Continue',
     cli: [],
-    projectFiles: ['AGENTS.md', '.continue/rules'],
+    projectFiles: ['.continue/rules'],
     rulesDir: '.continue/rules',
     readsAgentsMd: true,
     bridge: 'native',
@@ -124,7 +128,7 @@ export const TOOLS = [
     id: 'amazonq',
     name: 'Amazon Q',
     cli: ['q'],
-    projectFiles: ['AGENTS.md', '.amazonq/rules'],
+    projectFiles: ['.amazonq/rules'],
     rulesDir: '.amazonq/rules',
     readsAgentsMd: true,
     bridge: 'native',
@@ -133,7 +137,7 @@ export const TOOLS = [
     id: 'jules',
     name: 'Jules',
     cli: [],
-    projectFiles: ['AGENTS.md'],
+    projectFiles: [],
     readsAgentsMd: true,
     bridge: 'native',
   },

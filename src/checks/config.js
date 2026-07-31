@@ -12,17 +12,23 @@ export function checkConfig(repo, findings) {
   const agents = agentsMdPath(repo);
 
   // 1. Per-tool adapter → SSOT bridge verification.
+  // Adapters are tool-specific files only (not AGENTS.md) — see adapters/tools.js.
   const adapters = detectAdapters(repo);
-  if (adapters.length === 0) {
+  if (!agents && adapters.length === 0) {
     findings.warn('Config', 'no agent-tool configuration detected (CLAUDE.md, AGENTS.md, .cursor/rules, …)');
   }
   for (const entry of adapters) verifyBridge(repo, entry, agents, findings);
 
-  // Collapse the native readers into one line rather than one per tool.
+  // SSOT presence: native tools need nothing else; bridge tools are checked above if present.
   if (agents) {
-    const natives = adapters.filter((e) => e.tool.bridge === 'native').map((e) => e.tool.name);
-    if (natives.length) {
-      findings.pass('Config', `AGENTS.md read natively by: ${natives.join(', ')}`);
+    const configured = adapters.map((e) => e.tool.name);
+    if (configured.length) {
+      findings.pass(
+        'Config',
+        `AGENTS.md present — native tools read it directly; tool adapters found: ${configured.join(', ')}`,
+      );
+    } else {
+      findings.pass('Config', 'AGENTS.md present — native tools read it directly (no tool-specific adapters)');
     }
   }
 

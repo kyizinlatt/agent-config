@@ -31,14 +31,15 @@ Requires Node ≥ 18.
 ## Usage
 
 ```sh
-agent-pipx                 # check the current repo (human summary, exit 0/1/2)
+agent-pipx                 # check the current repo (live progress + summary, exit 0/1/2)
 agent-pipx check --json    # machine-readable findings
 agent-pipx check --sarif   # SARIF 2.1.0 for GitHub code scanning
 agent-pipx check --strict  # treat warnings as failures (exit 2) — good for CI
-agent-pipx report          # findings + a judgement prompt for your agent to act on
+agent-pipx report          # findings + how-to-fix tips + judgement prompt
 agent-pipx fix             # dry-run safe fixes; add --yes to apply (backs up originals)
 agent-pipx init            # scaffold AGENTS.md + a bridge file for your detected tool(s)
 agent-pipx init --tool claude
+agent-pipx upgrade         # check npm for a newer release; add --yes to install globally
 ```
 
 Exit codes: `0` pass · `1` warnings · `2` failures — drop it into CI or a pre-commit hook.
@@ -67,7 +68,9 @@ AGENTS.md  ← the single source of truth (your rules live here)
 └── Codex / Kimi / Copilot  →  read AGENTS.md directly, no bridge needed
 ```
 
-Only Claude Code needs a bridge file; every other tool reads `AGENTS.md` directly.
+Only Claude Code requires a bridge file (`CLAUDE.md` → `@AGENTS.md`). Gemini reads `AGENTS.md`
+natively; if you also keep a `GEMINI.md`, it must `@`-import or symlink `AGENTS.md` (never `@~/…`,
+which Gemini cannot resolve). Every other listed tool reads `AGENTS.md` directly.
 
 ## Claude Code integration (optional)
 
@@ -80,10 +83,10 @@ link. The `/config-check` command and `config-auditor` subagent drive this same 
 
 Safe to run on any repo, including private ones — and enforced by tests:
 
-- **No network, no telemetry.** Zero runtime dependencies and zero network calls; your code never
-  leaves your machine.
-- **No code execution.** It never runs shell commands or `eval`; installed CLIs are detected by a
-  `PATH` scan, not by executing anything.
+- **No network, no telemetry** for `check` / `report` / `init` / `fix`. Zero runtime dependencies;
+  your code never leaves your machine. (`upgrade` is the opt-in exception — it queries npm.)
+- **No code execution** for those commands. Installed CLIs are detected by a `PATH` scan, not by
+  executing anything. (`upgrade --yes` may run `npm install -g`.)
 - **`check` and `report` are read-only.** They never create, modify, or delete a file.
 - **`init` only creates missing files**; **`fix` only writes with `--yes`** and always backs up
   the original to `*.bak` first. Neither ever silently overwrites your files.

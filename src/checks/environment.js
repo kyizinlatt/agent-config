@@ -1,7 +1,7 @@
 // ENVIRONMENT checks: which agent-tool CLIs are installed (informational), base tooling, and
 // package-manager ↔ lockfile agreement.
 import path from 'node:path';
-import { detectInstalledClis, detectStack, hasBinary, isDir, isFile, walk } from '../detect.js';
+import { detectInstalledClis, detectStack, hasBinary, isDir, isFile, readText, walk } from '../detect.js';
 
 export function checkEnvironment(repo, findings) {
   checkQualityGate(repo, findings);
@@ -33,14 +33,31 @@ export function checkEnvironment(repo, findings) {
       if (found[1] === 'pnpm' && !hasBinary('pnpm')) {
         findings.warn('Environment', 'pnpm-lock.yaml present but pnpm not on PATH');
       }
-    } else {
+    } else if (packageHasDeps(path.join(repo, 'package.json'))) {
       findings.warn('Environment', 'package.json but no lockfile — dependency versions unpinned');
+    } else {
+      findings.pass('Environment', 'package.json has no dependencies to pin');
     }
   }
   if (swift) {
     if (!hasBinary('swift') && !hasBinary('xcodebuild')) {
       findings.warn('Environment', 'Swift sources present but neither swift nor xcodebuild on PATH');
     }
+  }
+}
+
+function packageHasDeps(pkgPath) {
+  try {
+    const pkg = JSON.parse(readText(pkgPath) || '{}');
+    const keys = [
+      ...Object.keys(pkg.dependencies || {}),
+      ...Object.keys(pkg.devDependencies || {}),
+      ...Object.keys(pkg.optionalDependencies || {}),
+      ...Object.keys(pkg.peerDependencies || {}),
+    ];
+    return keys.length > 0;
+  } catch {
+    return false;
   }
 }
 

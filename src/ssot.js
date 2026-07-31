@@ -19,7 +19,7 @@ export function verifyBridge(repo, entry, agents, findings) {
   const { tool, files } = entry;
 
   if (tool.bridge === 'native') {
-    // These tools read AGENTS.md directly; checkConfig emits one summary line for all of them.
+    // These tools read AGENTS.md directly; checkConfig emits the SSOT summary.
     // Here we only run tool-specific validations that go beyond "SSOT present".
     if (tool.id === 'cursor') validateCursorRules(repo, findings);
     if (tool.id === 'copilot' && !agents && files.includes('.github/copilot-instructions.md')) {

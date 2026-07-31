@@ -37,8 +37,11 @@ test('secret scanning: clean config → Secrets pass, no false positive', () => 
 });
 
 test('--strict: a warning becomes a failure (exit 2)', async () => {
-  // package.json without a lockfile → an Environment warning.
-  const repo = mkrepo({ 'AGENTS.md': AGENTS, 'package.json': '{"name":"x"}\n' });
+  // package.json with deps but no lockfile → an Environment warning.
+  const repo = mkrepo({
+    'AGENTS.md': AGENTS,
+    'package.json': '{"name":"x","dependencies":{"left-pad":"1.0.0"}}\n',
+  });
   const normal = await run(['check', '--path', repo]);
   const strict = await run(['check', '--strict', '--path', repo]);
   assert.equal(normal, 1, 'warnings → exit 1 normally');
@@ -46,7 +49,10 @@ test('--strict: a warning becomes a failure (exit 2)', async () => {
 });
 
 test('SARIF: valid 2.1.0 shape, passes omitted, warn/fail mapped', () => {
-  const repo = mkrepo({ 'AGENTS.md': AGENTS, 'package.json': '{"name":"x"}\n' });
+  const repo = mkrepo({
+    'AGENTS.md': AGENTS,
+    'package.json': '{"name":"x","dependencies":{"left-pad":"1.0.0"}}\n',
+  });
   const f = runChecks(repo);
   const sarif = JSON.parse(renderSarif(f, repo));
   assert.equal(sarif.version, '2.1.0');
@@ -54,10 +60,70 @@ test('SARIF: valid 2.1.0 shape, passes omitted, warn/fail mapped', () => {
   assert.ok(sarif.runs[0].results.every((r) => ['error', 'warning'].includes(r.level)), 'only error/warning levels');
 });
 
-test('expanded coverage: Windsurf/Aider/Zed recognized as native readers', () => {
+test('AGENTS.md alone: native SSOT pass, does not list every tool', () => {
+  const repo = mkrepo({ 'AGENTS.md': AGENTS });
+  const f = runChecks(repo);
+  assert.ok(has(f, 'pass', /AGENTS\.md present — native tools read it directly/), 'SSOT pass');
+  assert.ok(!has(f, 'pass', /read natively by:.*Cursor/), 'does not enumerate unused tools');
+  assert.ok(!has(f, 'pass', /tool adapters found/), 'no adapters claimed');
+});
+
+test('expanded coverage: Windsurf adapter detected when .windsurfrules present', () => {
   const repo = mkrepo({ 'AGENTS.md': AGENTS, '.windsurfrules': 'x\n' });
   const f = runChecks(repo);
-  assert.ok(has(f, 'pass', /read natively by:.*Windsurf/), 'windsurf listed among native readers');
+  assert.ok(has(f, 'pass', /tool adapters found:.*Windsurf/), 'windsurf listed among configured adapters');
+});
+
+test('zero-dep package.json: no lockfile warning', () => {
+  const repo = mkrepo({ 'AGENTS.md': AGENTS, 'package.json': '{"name":"x"}\n' });
+  const f = runChecks(repo);
+  assert.ok(has(f, 'pass', /no dependencies to pin/), 'zero-dep is fine without lockfile');
+  assert.ok(!has(f, 'warn', /no lockfile/), 'no false lockfile warning');
+});
+
+test('styles: checker source does not self-match any / @ts-ignore patterns', () => {
+  const repo = mkrepo({
+    'AGENTS.md': AGENTS,
+    'package.json': '{"name":"x"}\n',
+    // Mimic the checker’s constructed regex style — must not count as real `any` / @ts-ignore.
+    'src/scan.js':
+      "const RE_ANY = new RegExp([':\\\\s*any\\\\b', '<' + 'any>', 'as ' + 'any\\\\b'].join('|'));\n" +
+      "const RE_TS = new RegExp('@ts-' + '(ignore|nocheck)');\n",
+  });
+  const f = runChecks(repo);
+  assert.ok(!has(f, 'warn', /use\(s\) of `any`/), 'no any false positive from pattern builders');
+  assert.ok(!has(f, 'warn', /@ts-ignore/), 'no @ts-ignore false positive from pattern builders');
+});
+
+test('styles: real any / console still flagged', () => {
+  const repo = mkrepo({
+    'AGENTS.md': AGENTS,
+    'package.json': '{"name":"x"}\n',
+    'src/app.ts': 'export const x: any = 1;\nconsole.log(x);\n// @ts-ignore\n',
+  });
+  const f = runChecks(repo);
+  assert.ok(has(f, 'warn', /1 use\(s\) of `any`/), 'real any counted');
+  assert.ok(has(f, 'warn', /1 console\.log/), 'real console counted');
+  assert.ok(has(f, 'warn', /1 @ts-ignore/), 'real @ts-ignore counted');
+});
+
+test('report: CLI UI, no JSON dump', async () => {
+  const repo = mkrepo({ 'AGENTS.md': AGENTS });
+  let out = '';
+  const orig = console.log;
+  console.log = (s) => {
+    out += String(s) + '\n';
+  };
+  try {
+    await run(['report', '--path', repo]);
+  } finally {
+    console.log = orig;
+  }
+  assert.match(out, /agent-pipx report/);
+  assert.match(out, /How to fix/);
+  assert.match(out, /Needs judgement|Copy-paste prompt/);
+  assert.doesNotMatch(out, /```json/);
+  assert.doesNotMatch(out, /"summary"\s*:/);
 });
 
 test('fix: dry-run does not modify; --yes rewrites @~/ and backs up', () => {

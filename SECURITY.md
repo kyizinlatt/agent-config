@@ -3,13 +3,15 @@
 `agent-pipx` is designed to be safe to run on any repository, including private and
 work codebases. These properties are enforced by tests (`test/safety.test.js`).
 
-## What it does not do
+## What it does not do (check / report / init / fix)
 
-- **No network access.** The tool makes zero network requests — no telemetry, no analytics, no
-  "phone home". It has zero runtime dependencies, so nothing else runs either. Your code and its
-  configuration never leave your machine.
-- **No code execution.** It never runs shell commands, `eval`, or any user-controlled input. It
-  detects installed CLIs by scanning `PATH` entries on disk, not by executing anything.
+- **No network access** for `check`, `report`, `init`, and `fix`. Those commands make zero
+  network requests — no telemetry, no analytics, no "phone home". They have zero runtime
+  dependencies, so nothing else runs either. Your code and its configuration never leave your
+  machine.
+- **No code execution** for those commands. They never run shell commands, `eval`, or any
+  user-controlled input. Installed CLIs are detected by scanning `PATH` entries on disk, not by
+  executing anything.
 - **No silent edits.** `check` and `report` are strictly **read-only** — they do not create,
   modify, or delete a single file in your repository.
 
@@ -23,6 +25,13 @@ creates. It will never overwrite or edit an existing `AGENTS.md`, `CLAUDE.md`, o
 unresolvable `@~/…` import). It is a **dry run unless you pass `--yes`**, it **backs up any file
 it changes to `*.bak`** before writing, and it prints every change. It never merges, deletes, or
 guesses at your content — content drift is reported for you to resolve by hand.
+
+## Opt-in network: `upgrade`
+
+`agent-pipx upgrade` is the **only** command that contacts the network. It asks the npm registry
+for the latest `agent-pipx` version (`npm view`). With `--yes` it may run
+`npm install -g agent-pipx@<version>`. Dry-run (default) only prints the suggested command.
+`check` / `report` remain offline.
 
 ## What it reads
 

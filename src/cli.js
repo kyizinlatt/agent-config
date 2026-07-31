@@ -1,4 +1,4 @@
-// CLI dispatch for `agent-pipx`. Commands: check (default) | report | init.
+// CLI dispatch for `agent-pipx`. Commands: check (default) | report | init | fix | upgrade.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,9 +9,11 @@ import { checkRules } from './checks/rules.js';
 import { checkStyles } from './checks/styles.js';
 import { checkEnvironment } from './checks/environment.js';
 import { renderHuman, renderJson, renderReport, renderSarif } from './report.js';
+import { CHECK_STEPS, createProgress } from './progress.js';
 import { detectInstalledClis, exists } from './detect.js';
 import { toolById } from '../adapters/tools.js';
 import { doFix } from './fix.js';
+import { doUpgrade } from './upgrade.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PKG_ROOT = path.dirname(HERE);
@@ -21,15 +23,17 @@ const HELP = `agent-pipx — audit a repo's AI-agent configuration against the A
 Usage:
   agent-pipx [check] [--path DIR] [--json] [--sarif] [--strict]
                                                Run secrets/config/rules/styles/environment checks
-  agent-pipx report [--path DIR]             Findings + a judgement prompt for your agent
+  agent-pipx report [--path DIR]             CLI findings + how-to-fix + judgement prompt
   agent-pipx fix [--yes] [--path DIR]        Safely remediate mechanical issues (dry-run without --yes)
   agent-pipx init [--tool ID] [--path DIR]   Scaffold AGENTS.md (SSOT) + a tool bridge
+  agent-pipx upgrade [--yes]                 Check npm for a newer agent-pipx (apply with --yes)
   agent-pipx --version | --help
 
 Flags:
   --json     machine-readable findings
   --sarif    SARIF 2.1.0 output for GitHub code scanning
   --strict   treat warnings as failures (exit 2)
+  --yes      apply fix/upgrade (otherwise dry-run)
 
 Tools: claude, codex, kimi, cursor, antigravity, gemini, copilot, windsurf, aider, zed, continue, amazonq, jules
 Exit codes: 0 = pass, 1 = warnings, 2 = failures.`;
@@ -46,8 +50,11 @@ function parseArgs(argv) {
     else if (a === '--sarif') opts.sarif = true;
     else if (a === '--strict') opts.strict = true;
     else if (a === '--yes' || a === '-y') opts.yes = true;
-    else if (a === '--path') opts.path = path.resolve(rest.shift() || '.');
-    else if (a === '--tool') opts.tool = rest.shift();
+    else if (a === '--path') {
+      const next = rest.shift();
+      if (!next || next.startsWith('-')) throw new Error('--path requires a directory argument');
+      opts.path = path.resolve(next);
+    } else if (a === '--tool') opts.tool = rest.shift();
     else if (a === '--version' || a === '-v') opts.command = 'version';
     else if (a === '--help' || a === '-h') opts.command = 'help';
     else throw new Error(`unknown argument: ${a}`);
@@ -55,13 +62,30 @@ function parseArgs(argv) {
   return opts;
 }
 
-export function runChecks(repo) {
+const STEPS = [
+  ['Secrets', checkSecrets],
+  ['Config', checkConfig],
+  ['Rules', checkRules],
+  ['Styles', checkStyles],
+  ['Environment', checkEnvironment],
+];
+
+/**
+ * @param {string} repo
+ * @param {{ onProgress?: { begin?: Function, start?: Function, done?: Function, end?: Function } }} [opts]
+ */
+export function runChecks(repo, opts = {}) {
+  const progress = opts.onProgress || createProgress({ enabled: false });
   const findings = new Findings();
-  checkSecrets(repo, findings);
-  checkConfig(repo, findings);
-  checkRules(repo, findings);
-  checkStyles(repo, findings);
-  checkEnvironment(repo, findings);
+  const detail = Object.fromEntries(CHECK_STEPS.map((s) => [s.name, s.detail]));
+
+  progress.begin?.(repo);
+  for (const [name, fn] of STEPS) {
+    progress.start?.(name, detail[name]);
+    fn(repo, findings);
+    progress.done?.(name);
+  }
+  progress.end?.();
   return findings;
 }
 
@@ -83,6 +107,9 @@ export async function run(argv) {
     console.log(pkg.version);
     return 0;
   }
+  if (opts.command === 'upgrade') {
+    return doUpgrade({ apply: opts.yes });
+  }
 
   const repo = path.resolve(opts.path);
   if (!exists(repo)) throw new Error(`no such directory: ${repo}`);
@@ -94,7 +121,12 @@ export async function run(argv) {
     throw new Error(`unknown command: ${opts.command}`);
   }
 
-  const findings = runChecks(repo);
+  const machine = opts.json || opts.sarif;
+  const showProgress = !machine && Boolean(process.stderr.isTTY) && !process.env.AGENT_PIPX_NO_PROGRESS;
+  const findings = runChecks(repo, {
+    onProgress: createProgress({ enabled: showProgress, stream: process.stderr }),
+  });
+
   if (opts.command === 'report') {
     console.log(renderReport(findings, repo));
   } else if (opts.sarif) {
