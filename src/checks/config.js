@@ -3,7 +3,7 @@
 // check-config.sh and adds multi-tool SSOT/drift verification.
 import fs from 'node:fs';
 import path from 'node:path';
-import { detectAdapters, exists, isDir, isDangling, readlink, readText, walk } from '../detect.js';
+import { detectAdapters, exists, isDir, isDangling, isFile, readlink, readText, walk } from '../detect.js';
 import { agentsMdPath, verifyBridge } from '../ssot.js';
 
 const CORE_HOOKS = ['guard-secrets.sh', 'guard-push.sh', 'check-hygiene.sh'];
@@ -30,6 +30,28 @@ export function checkConfig(repo, findings) {
   const claudeDir = path.join(repo, '.claude');
   if (isDir(claudeDir)) {
     checkClaudeDir(repo, claudeDir, findings);
+  }
+
+  // 3. MCP servers — surface how many are wired so their tool scope gets reviewed.
+  checkMcp(repo, findings);
+}
+
+function checkMcp(repo, findings) {
+  const files = ['.mcp.json', '.cursor/mcp.json', '.vscode/mcp.json']
+    .map((f) => path.join(repo, f))
+    .filter(isFile);
+  if (!files.length) return;
+  let servers = 0;
+  for (const f of files) {
+    try {
+      const j = JSON.parse(readText(f));
+      servers += Object.keys(j.mcpServers || j.servers || {}).length;
+    } catch {
+      findings.warn('Config', `${path.relative(repo, f)} is not valid JSON`, path.relative(repo, f));
+    }
+  }
+  if (servers > 0) {
+    findings.pass('Config', `${servers} MCP server(s) configured — review each tool's scope, prefer read-only`);
   }
 }
 

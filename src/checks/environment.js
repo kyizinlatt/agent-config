@@ -1,9 +1,10 @@
 // ENVIRONMENT checks: which agent-tool CLIs are installed (informational), base tooling, and
 // package-manager ↔ lockfile agreement.
 import path from 'node:path';
-import { detectInstalledClis, detectStack, hasBinary, isFile } from '../detect.js';
+import { detectInstalledClis, detectStack, hasBinary, isDir, isFile, walk } from '../detect.js';
 
 export function checkEnvironment(repo, findings) {
+  checkQualityGate(repo, findings);
   // git is assumed by nearly everything.
   if (hasBinary('git')) findings.pass('Environment', 'git available');
   else findings.warn('Environment', 'git not on PATH');
@@ -40,5 +41,21 @@ export function checkEnvironment(repo, findings) {
     if (!hasBinary('swift') && !hasBinary('xcodebuild')) {
       findings.warn('Environment', 'Swift sources present but neither swift nor xcodebuild on PATH');
     }
+  }
+}
+
+// A git repo should have an automated quality gate: CI and/or pre-commit hooks.
+function checkQualityGate(repo, findings) {
+  if (!isDir(path.join(repo, '.git'))) return; // only meaningful inside a repo
+  const wf = path.join(repo, '.github', 'workflows');
+  const hasCI =
+    (isDir(wf) && walk(wf, { exts: ['.yml', '.yaml'] }).length > 0) ||
+    ['.gitlab-ci.yml', 'azure-pipelines.yml', '.circleci/config.yml'].some((f) => isFile(path.join(repo, f)));
+  const hasPreCommit = ['.pre-commit-config.yaml', '.husky', 'lefthook.yml', '.lefthook.yml', 'lefthook.yaml']
+    .some((f) => isFile(path.join(repo, f)) || isDir(path.join(repo, f)));
+  if (hasCI || hasPreCommit) {
+    findings.pass('Environment', 'automated quality gate present (CI and/or pre-commit)');
+  } else {
+    findings.warn('Environment', 'no CI workflow or pre-commit hooks found — add an automated quality gate');
   }
 }

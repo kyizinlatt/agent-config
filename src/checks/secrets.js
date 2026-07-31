@@ -21,6 +21,7 @@ const PATTERNS = [
 const TARGET_FILES = [
   'AGENTS.md', 'CLAUDE.md', 'GEMINI.md', 'CLAUDE.local.md',
   '.github/copilot-instructions.md',
+  '.mcp.json', '.cursor/mcp.json', '.vscode/mcp.json',
 ];
 const TARGET_DIRS = ['.claude', '.cursor/rules', '.agents/rules', '.windsurf/rules', '.continue/rules', '.amazonq/rules'];
 

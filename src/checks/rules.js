@@ -36,6 +36,25 @@ export function checkRules(repo, findings) {
   }
 
   checkQuality(content, findings);
+  checkCompleteness(content, findings);
+}
+
+// Does AGENTS.md document the essentials an agent needs? One compact advisory line, low
+// false-positive: only flags a section as missing when no reasonable signal for it appears.
+function checkCompleteness(content, findings) {
+  const missing = [];
+  const hasCommands =
+    /^#{1,6}\s+.*command/im.test(content) ||
+    /\b(npm run|pnpm |yarn |make |cargo |go test|pytest|swift (build|test)|xcodebuild|npx )/i.test(content);
+  const hasBoundaries =
+    /do[\s-]?not[\s-]?touch|out[\s-]?of[\s-]?scope|boundar|must not|never (edit|modify|touch|change)/i.test(content);
+  const hasSensitive = /secret|credential|sensitive|\.env|do[\s-]?not[\s-]?commit|token/i.test(content);
+  if (!hasCommands) missing.push('Commands (test/lint/build)');
+  if (!hasBoundaries) missing.push('boundaries/do-not-touch');
+  if (!hasSensitive) missing.push('sensitive-data note');
+  if (missing.length) {
+    findings.warn('Rules', `AGENTS.md is missing recommended section(s): ${missing.join('; ')}`, 'AGENTS.md');
+  }
 }
 
 // Quality-of-content checks on AGENTS.md: length and structure.

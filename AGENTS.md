@@ -33,3 +33,14 @@ Package manager: npm.
 - Every new check needs a test in `test/` that builds a synthetic repo and asserts the finding.
 - Never commit anything private (personal names, machine paths, private repo names) — this repo
   is public. Run the grep gate before shipping.
+
+## Boundaries (do not touch)
+
+- Do not add runtime or dev dependencies — Node built-ins only.
+- `claude-harness/` is the Claude Code-only adapter; keep the tool-neutral checker (`src/`) free
+  of tool-specific machinery.
+
+## Sensitive data
+
+- This repo is public: never commit secrets, credentials, tokens, or `.env` contents. Keep the
+  tool's output free of file contents — report counts, paths, and messages only.
