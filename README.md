@@ -1,4 +1,4 @@
-# agent-pipx
+# Agent PipX
 
 Audit a repository's **AI-agent configuration** — config, rules, styles, environment — against the
 [`AGENTS.md`](https://agents.md) standard. Works for whatever coding agent your team uses: Claude
