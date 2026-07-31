@@ -6,7 +6,7 @@ import path from 'node:path';
 import { detectAdapters, exists, isDir, isDangling, isFile, readlink, readText, walk } from '../detect.js';
 import { agentsMdPath, verifyBridge } from '../ssot.js';
 
-const CORE_HOOKS = ['guard-secrets.sh', 'guard-push.sh', 'check-hygiene.sh'];
+const CORE_HOOKS = ['guard-secrets.sh', 'guard-push.sh', 'guard-env.sh', 'check-hygiene.sh'];
 
 export function checkConfig(repo, findings) {
   const agents = agentsMdPath(repo);
