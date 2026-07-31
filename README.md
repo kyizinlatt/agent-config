@@ -1,4 +1,5 @@
 # Agent PipX
+<img width="989" height="506" alt="Screenshot 2569-07-31 at 16 09 30" src="https://github.com/user-attachments/assets/4a25a700-35cb-40c3-9326-7d6c75ce078d" />
 
 Audit a repository's **AI-agent configuration** — config, rules, styles, environment — against the
 [`AGENTS.md`](https://agents.md) standard. Works for whatever coding agent your team uses: Claude
