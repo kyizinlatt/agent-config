@@ -5,10 +5,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { runChecks, run } from '../src/cli.js';
-import { renderHuman, renderReport } from '../src/report.js';
+import { renderHuman, renderReport, selectJudgementItems } from '../src/report.js';
 import { tipForFinding, remediationsFor } from '../src/remediate.js';
 import { cmpVersion, currentVersion, doUpgrade } from '../src/upgrade.js';
-import { WARN, FAIL } from '../src/findings.js';
+import { WARN, FAIL, PASS } from '../src/findings.js';
+import { Findings } from '../src/findings.js';
 
 function mkrepo(files) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-ux-'));
@@ -60,6 +61,36 @@ test('report includes Fix cards for warnings', () => {
   assert.match(out, /Agent prompt/);
   assert.match(out, /no lockfile|Commit the lockfile/i);
   assert.match(out, /Checked: Secrets/);
+  // Issue-aware: Environment lockfile → Tool fit + quality; prompt lists the open issue.
+  assert.match(out, /Tool fit/);
+  assert.match(out, /AGENTS\.md quality/);
+  assert.match(out, /\[WARN\].*lockfile|open issues/i);
+});
+
+test('hybrid judgement: PASS uses nuance set; issues add matching topics', () => {
+  const clean = new Findings();
+  clean.add(PASS, 'Secrets', 'ok');
+  const passIds = selectJudgementItems(clean).map((j) => j.id);
+  assert.deepEqual(passIds, ['quality', 'drift', 'fit', 'health']);
+
+  const envOnly = new Findings();
+  envOnly.add(WARN, 'Environment', 'package.json but no lockfile — dependency versions unpinned');
+  const envIds = selectJudgementItems(envOnly).map((j) => j.id);
+  assert.deepEqual(envIds, ['quality', 'fit']);
+
+  const cfg = new Findings();
+  cfg.add(WARN, 'Config', '.claude/ exists but settings.json is missing');
+  assert.deepEqual(
+    selectJudgementItems(cfg).map((j) => j.id),
+    ['quality', 'drift'],
+  );
+
+  const secret = new Findings();
+  secret.add(FAIL, 'Secrets', 'possible GitHub token committed in AGENTS.md:3');
+  assert.deepEqual(
+    selectJudgementItems(secret).map((j) => j.id),
+    ['quality', 'secrets'],
+  );
 });
 
 test('remediate: known patterns get specific tips', () => {

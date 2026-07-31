@@ -188,18 +188,83 @@ function renderPassedPanel(findings) {
   return lines;
 }
 
-const JUDGEMENT_ITEMS = [
-  { title: 'AGENTS.md quality', detail: 'Real project rules, or generic filler?' },
-  { title: 'Adapter drift', detail: 'Do CLAUDE.md / GEMINI.md / .cursor/rules duplicate or contradict AGENTS.md?' },
-  { title: 'Tool fit', detail: 'Do configured tools match how this repo is actually built?' },
-  { title: 'Rule health', detail: 'Anything unenforceable, outdated, or in conflict?' },
+const JUDGEMENT_ALWAYS = {
+  id: 'quality',
+  title: 'AGENTS.md quality',
+  detail: 'Real project rules, or generic filler?',
+};
+
+const JUDGEMENT_OPTIONAL = [
+  {
+    id: 'drift',
+    title: 'Adapter drift',
+    detail: 'Do CLAUDE.md / GEMINI.md / .cursor/rules duplicate or contradict AGENTS.md?',
+    match: (f) =>
+      f.category === 'Config' ||
+      /CLAUDE\.md|GEMINI\.md|\.cursor\/rules|adapter|bridge|symlink|settings\.json|hook/i.test(f.message),
+  },
+  {
+    id: 'fit',
+    title: 'Tool fit',
+    detail: 'Do configured tools match how this repo is actually built?',
+    match: (f) => f.category === 'Environment' || /CLI|lockfile|CI|pre-commit|toolchain|PATH/i.test(f.message),
+  },
+  {
+    id: 'health',
+    title: 'Rule health',
+    detail: 'Anything unenforceable, outdated, or in conflict?',
+    match: (f) =>
+      f.category === 'Rules' ||
+      f.category === 'Styles' ||
+      /placeholder|empty section|nearly empty|oversize|console\.|`any`|@ts-/i.test(f.message),
+  },
+  {
+    id: 'secrets',
+    title: 'Secret response',
+    detail: 'Were flagged credentials rotated and purged from the file (and git history if committed)?',
+    match: (f) => f.category === 'Secrets' || /credential|token|secret|private key/i.test(f.message),
+  },
 ];
 
-function renderJudgementPanel() {
+const JUDGEMENT_PASS_SET = [
+  JUDGEMENT_ALWAYS,
+  ...JUDGEMENT_OPTIONAL.filter((j) => j.id !== 'secrets'),
+];
+
+/** Hybrid: PASS ? full nuance set; issues ? always quality + items matching open findings. */
+export function selectJudgementItems(findings) {
+  const issues = findings.items.filter((f) => f.severity === FAIL || f.severity === WARN);
+  if (!issues.length) return JUDGEMENT_PASS_SET;
+  const selected = [JUDGEMENT_ALWAYS];
+  for (const item of JUDGEMENT_OPTIONAL) {
+    if (issues.some((f) => item.match(f))) selected.push(item);
+  }
+  return selected;
+}
+
+function issueSummaries(findings) {
+  return findings.items
+    .filter((f) => f.severity === FAIL || f.severity === WARN)
+    .map((f) => {
+      const where = f.file ? ` (${f.file})` : '';
+      return `- [${f.severity.toUpperCase()}] ${f.category}: ${f.message}${where}`;
+    });
+}
+
+function renderJudgementPanel(findings) {
+  const items = selectJudgementItems(findings);
+  const issues = findings.items.some((f) => f.severity !== PASS);
   const lines = ['', rule('Judgement'), ''];
-  lines.push(c('2', `  Mechanical checks cannot decide these ${EM} ask your coding agent:`));
+  lines.push(
+    c(
+      '2',
+      issues
+        ? `  Focused on open issues (+ AGENTS.md quality) ${EM} ask your coding agent:`
+        : `  Mechanical checks passed ${EM} still ask your coding agent about nuance:`,
+    ),
+  );
   lines.push('');
-  JUDGEMENT_ITEMS.forEach((item, i) => {
+  items.forEach((item, i) => {
     lines.push(`  ${c('33', String(i + 1) + '.')} ${c('1', item.title)}`);
     lines.push(`     ${c('2', item.detail)}`);
   });
@@ -207,11 +272,27 @@ function renderJudgementPanel() {
   return lines;
 }
 
-function buildJudgementPrompt() {
-  const bullets = JUDGEMENT_ITEMS.map((item) => `- ${item.title}: ${item.detail}`);
+function buildJudgementPrompt(findings) {
+  const items = selectJudgementItems(findings);
+  const issues = issueSummaries(findings);
+  const bullets = items.map((item) => `- ${item.title}: ${item.detail}`);
+
+  if (!issues.length) {
+    return [
+      "Mechanical checks on this repo's AI-agent configuration passed. Still make these nuance calls:",
+      '',
+      ...bullets,
+      '',
+      'Read AGENTS.md and each adapter briefly, then give a one-line verdict. Do not edit unless asked.',
+    ];
+  }
+
   return [
-    "You are auditing this repository's AI-agent configuration. The deterministic findings above",
-    'cover what is mechanically verifiable. Now make the judgement calls a linter cannot:',
+    "You are auditing this repository's AI-agent configuration. agent-pipx reported these open issues:",
+    '',
+    ...issues,
+    '',
+    'Address those first, then make these judgement calls a linter cannot:',
     '',
     ...bullets,
     '',
@@ -221,8 +302,8 @@ function buildJudgementPrompt() {
   ];
 }
 
-function renderPromptPanel() {
-  const promptRows = buildJudgementPrompt();
+function renderPromptPanel(findings) {
+  const promptRows = buildJudgementPrompt(findings);
   const lines = ['', rule('Agent prompt'), ''];
   lines.push(c('2', '  Copy this block into your coding agent:'));
   lines.push('');
@@ -301,7 +382,7 @@ export function renderReport(findings, repo) {
   lines.push(`  ${action}`);
   lines.push(...renderIssueCards(findings));
   lines.push(...renderPassedPanel(findings));
-  lines.push(...renderJudgementPanel());
-  lines.push(...renderPromptPanel());
+  lines.push(...renderJudgementPanel(findings));
+  lines.push(...renderPromptPanel(findings));
   return lines.join('\n');
 }

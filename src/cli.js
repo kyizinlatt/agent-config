@@ -23,7 +23,7 @@ const HELP = `agent-pipx — audit a repo's AI-agent configuration against the A
 Usage:
   agent-pipx [check] [--path DIR] [--json] [--sarif] [--strict]
                                                Run secrets/config/rules/styles/environment checks
-  agent-pipx report [--path DIR]             status + fix cards + judgement + agent prompt
+  agent-pipx report [--path DIR]             status + fix cards + hybrid judgement/prompt
   agent-pipx fix [--yes] [--path DIR]        Safely remediate mechanical issues (dry-run without --yes)
   agent-pipx init [--tool ID] [--path DIR]   Scaffold AGENTS.md (SSOT) + a tool bridge
   agent-pipx upgrade [--yes]                 Query npm for a newer release (network); --yes installs -g
