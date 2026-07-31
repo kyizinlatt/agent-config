@@ -1,6 +1,6 @@
 name: Publish to npm
 
-# Publishes when you create a GitHub Release (or run manually).
+# Publishes when you create a GitHub Release (or run manually via workflow_dispatch).
 #
 # Auth: npm Trusted Publishing (OIDC) — NO GitHub Environment, NO NPM_TOKEN.
 # One-time setup on https://www.npmjs.com/package/agent-pipx → Settings → Trusted Publisher:
@@ -10,7 +10,9 @@ name: Publish to npm
 #   Environment name     : (leave BLANK — this repo does not use GitHub Environments)
 #   Allowed actions      : npm publish
 #
-# Requires npm CLI ≥ 11.5.1 for OIDC. Provenance is attached automatically with trusted publishing.
+# Requires npm CLI ≥ 11.5.1 and Node ≥ 22.14 for OIDC.
+# Do NOT leave setup-node's default NODE_AUTH_TOKEN (github.token) in place — it makes npm
+# try token auth and skip/break OIDC, which surfaces as E404 on PUT for existing packages.
 
 on:
   release:
@@ -31,7 +33,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
+          # No registry-url here — that writes an .npmrc with _authToken=${NODE_AUTH_TOKEN}
+          # defaulting to github.token, which breaks trusted publishing.
           package-manager-cache: false
 
       # Trusted publishing needs npm ≥ 11.5.1 (Node 22 ships an older npm).
@@ -42,5 +45,9 @@ jobs:
         run: node --test
 
       - name: Publish (public, provenance via OIDC)
-        # Do NOT set NODE_AUTH_TOKEN — an empty token makes npm skip OIDC and fail with ENEEDAUTH.
-        run: npm publish --provenance --access public
+        # Explicitly clear any token pollution; OIDC is the only auth path.
+        env:
+          NODE_AUTH_TOKEN: ''
+        run: |
+          npm config delete //registry.npmjs.org/:_authToken || true
+          npm publish --provenance --access public
