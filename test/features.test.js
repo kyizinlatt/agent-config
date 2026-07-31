@@ -202,3 +202,12 @@ test('secret scanning: skips file under symlinked parent dir (CWE-59)', () => {
   const f = runChecks(repo);
   assert.ok(!has(f, FAIL, /GitHub token/), 'must not read TARGET_FILES through a symlinked parent');
 });
+
+test('--path rejects a file (must be a directory)', async () => {
+  const repo = mkrepo({ 'AGENTS.md': AGENTS });
+  const file = path.join(repo, 'AGENTS.md');
+  await assert.rejects(
+    () => run(['check', '--path', file]),
+    /no such directory/,
+  );
+});

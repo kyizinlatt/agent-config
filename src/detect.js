@@ -15,7 +15,7 @@ export function exists(p) {
 
 export function isSymlink(p) {
   try {
-    return fs.lstatSync(p).isSymlink();
+    return fs.lstatSync(p).isSymbolicLink();
   } catch {
     return false;
   }
@@ -89,6 +89,16 @@ export function assertInsideRepo(repo, abs) {
     throw new Error(`path escapes repo: ${path.relative(repo, abs) || abs}`);
   }
   return real;
+}
+
+/** true when realpath(abs) stays inside realpath(repo). */
+export function isInsideRepo(repo, abs) {
+  try {
+    assertInsideRepo(repo, abs);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function isDir(p) {
