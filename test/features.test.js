@@ -143,3 +143,32 @@ test('fix: dry-run does not modify; --yes rewrites @~/ and backs up', () => {
   const f = runChecks(repo);
   assert.equal(f.count(FAIL), 0, 'no failures after fix');
 });
+
+test('fix: refuses to write through GEMINI.md symlink (CWE-59)', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-fix-sym-'));
+  const outside = path.join(root, 'OUTSIDE.txt');
+  fs.writeFileSync(outside, '@~/evil/AGENTS.md\nkeep-me\n');
+  const repo = path.join(root, 'repo');
+  fs.mkdirSync(repo);
+  fs.writeFileSync(path.join(repo, 'AGENTS.md'), AGENTS);
+  fs.symlinkSync(outside, path.join(repo, 'GEMINI.md'));
+
+  doFix(repo, { apply: true });
+
+  assert.equal(fs.readFileSync(outside, 'utf8'), '@~/evil/AGENTS.md\nkeep-me\n', 'outside target must be untouched');
+  assert.ok(!fs.existsSync(path.join(repo, 'GEMINI.md.bak')), 'must not copy outside contents into .bak');
+});
+
+test('secret scanning: skips symlinked AGENTS.md (no out-of-repo read)', () => {
+  // Pattern-shaped fake token — deliberate fixture, not a live credential.
+  const fake = 'ghp_' + 'B'.repeat(36);
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-sec-sym-'));
+  const outside = path.join(root, 'leaked.env');
+  fs.writeFileSync(outside, `token: ${fake}\n`);
+  const repo = path.join(root, 'repo');
+  fs.mkdirSync(repo);
+  fs.symlinkSync(outside, path.join(repo, 'AGENTS.md'));
+
+  const f = runChecks(repo);
+  assert.ok(!has(f, FAIL, /GitHub token/), 'must not follow symlink to outside secrets');
+});
