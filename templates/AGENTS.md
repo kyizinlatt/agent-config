@@ -27,6 +27,16 @@
 - [Where business logic lives; what stays out of it]
 - Plan and show risks before non-trivial changes; ask when unsure.
 
+## Tracked findings (when this repository has audits or reviews)
+
+- Keep stable finding IDs and one current remediation ledger in the finding document. Treat progress
+  or changelog files as chronological evidence, not current status.
+- Distinguish `CODE_COMPLETE` / `PRODUCTION_PENDING` from `CLOSED`; close only after every applicable
+  acceptance test and live/external exit gate has evidence.
+- Check the ledger and current implementation before starting. Update the ledger with the fix, and
+  never silently redo a closed finding—reopen it with contradictory evidence.
+- Accepted risks need an owner, decision date, compensating controls, and review/expiry date.
+
 ## Boundaries (do not touch)
 
 - [Generated files / directories the agent must not edit]

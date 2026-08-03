@@ -30,6 +30,16 @@ Package manager: [pnpm | npm | pip | swift | …].
 - [Where business logic lives; what stays out of it]
 - [Release / branch / push policy specific to this repo]
 
+## Tracked findings (when this repository has audits or reviews)
+
+- Keep stable finding IDs and one current remediation ledger in the finding document. Progress files
+  are chronological evidence, not current status.
+- `CODE_COMPLETE` and `PRODUCTION_PENDING` are not `CLOSED`; closure requires every applicable
+  acceptance test and live/external exit gate.
+- Check the ledger and current implementation before starting, update both with the remediation,
+  and reopen closed work only with contradictory evidence.
+- Accepted risks need an owner, decision date, compensating controls, and review/expiry date.
+
 ## Claude Code harness (optional)
 
 If this repo links the Claude Code harness, guardrails and workflows are inherited — do not

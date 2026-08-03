@@ -73,6 +73,14 @@ Only Claude Code requires a bridge file (`CLAUDE.md` → `@AGENTS.md`). Gemini r
 natively; if you also keep a `GEMINI.md`, it must `@`-import or symlink `AGENTS.md` (never `@~/…`,
 which Gemini cannot resolve). Every other listed tool reads `AGENTS.md` directly.
 
+### Durable audit and review handoffs
+
+The generated `AGENTS.md` also includes an optional tracked-findings protocol. When a project has
+an audit, security review, or hardening plan, the finding document keeps stable IDs and one current
+remediation ledger; progress files remain chronological history. The protocol separates code
+completion from production closure, prevents a later agent from redoing closed work, and requires
+explicit evidence before reopening or accepting risk.
+
 ## Claude Code integration (optional)
 
 The [`claude-harness/`](claude-harness/) directory ships an optional Claude Code harness — hooks,
