@@ -31,7 +31,7 @@ npm install -g agent-pipx
 npx agent-pipx
 ```
 
-Node ≥ 18. Current release: **v0.4.11**.
+Node ≥ 18. Current release: **v0.4.12**.
 
 ## Usage
 
@@ -57,9 +57,10 @@ agent-pipx upgrade         # npm version check; `--yes` installs -g
 | **Styles** | Stack antipatterns (TS `any` / `console.log` / `@ts-ignore`; Swift `try!` / `as!` / `print`). Advisory. |
 | **Environment** | Agent CLIs on `PATH`; lockfile matches package manager; CI or pre-commit gate. |
 
-Tools: Claude Code, Codex, Kimi, Cursor, Antigravity, Gemini, Copilot, Windsurf, Aider, Zed,
-Continue, Amazon Q, Jules. Per-tool facts live in [`adapters/tools.js`](adapters/tools.js) (official
-docs cited) — checks never hard-code tool conventions elsewhere.
+Tools: Claude Code, Cursor, Gemini, Copilot, Codex, Kimi, Antigravity, Windsurf. Per-tool facts
+live in [`adapters/tools.js`](adapters/tools.js) (official docs cited) — checks never hard-code
+tool conventions elsewhere. Entries require a real adapter path or bridge rule, not a marketing
+supported-agents list.
 
 ## The AGENTS.md model
 

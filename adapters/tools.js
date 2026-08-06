@@ -5,6 +5,10 @@
 // Foundation since Dec 2025). Most tools read AGENTS.md natively; Claude Code is the holdout that
 // reads CLAUDE.md and must BRIDGE to AGENTS.md via an `@AGENTS.md` import or a symlink.
 //
+// Only tools with real adapter paths and/or bridge rules belong here — not every name that
+// appears on a supported-agents marketing list. Native AGENTS.md readers with no projectFiles
+// still work when AGENTS.md exists; they need an entry only when we detect a CLI or adapter.
+//
 // bridge:
 //   'native'             → tool reads AGENTS.md directly; the SSOT being present is sufficient.
 //   'import-or-symlink'  → tool reads its own file, which must reference AGENTS.md (no duplication).
@@ -35,16 +39,6 @@ export const TOOLS = [
     globalPaths: ['~/.claude/CLAUDE.md'],
   },
   {
-    id: 'gemini',
-    name: 'Gemini CLI',
-    cli: ['gemini'],
-    projectFiles: ['GEMINI.md'],
-    readsAgentsMd: true, // via the AGENTS.md standard
-    bridge: 'import-or-symlink',
-    importSupportsTilde: false, // Gemini's memory @import resolves relative/absolute only — NOT ~
-    globalPaths: ['~/.gemini/GEMINI.md'],
-  },
-  {
     id: 'cursor',
     name: 'Cursor',
     cli: ['cursor-agent'],
@@ -61,19 +55,23 @@ export const TOOLS = [
     bridge: 'native',
   },
   {
-    id: 'antigravity',
-    name: 'Google Antigravity',
-    cli: [],
-    // AGENTS.md support since v1.20.3; workspace rules in .agents/rules/
-    projectFiles: ['.agents/rules'],
-    rulesDir: '.agents/rules',
-    // Shared Agent Skills location also used by Cursor — docs: https://cursor.com/docs/skills
-    skillsDirs: ['.agents/skills'],
-    skillFile: 'SKILL.md',
-    skillFrontmatter: ['name', 'description'],
+    id: 'gemini',
+    name: 'Gemini CLI',
+    cli: ['gemini'],
+    projectFiles: ['GEMINI.md'],
+    readsAgentsMd: true, // via the AGENTS.md standard
+    bridge: 'import-or-symlink',
+    importSupportsTilde: false, // Gemini's memory @import resolves relative/absolute only — NOT ~
+    globalPaths: ['~/.gemini/GEMINI.md'],
+  },
+  {
+    id: 'copilot',
+    name: 'GitHub Copilot',
+    cli: ['copilot'],
+    projectFiles: ['.github/copilot-instructions.md'],
     readsAgentsMd: true,
     bridge: 'native',
-    globalPaths: ['~/.gemini/AGENTS.md', '~/.gemini/GEMINI.md'],
+    globalPaths: ['~/.copilot/copilot-instructions.md'],
   },
   {
     id: 'codex',
@@ -95,63 +93,26 @@ export const TOOLS = [
     globalPaths: ['~/.kimi-code/AGENTS.md', '~/.agents/AGENTS.md'],
   },
   {
-    id: 'copilot',
-    name: 'GitHub Copilot',
-    cli: ['copilot'],
-    projectFiles: ['.github/copilot-instructions.md'],
+    id: 'antigravity',
+    name: 'Google Antigravity',
+    cli: [],
+    // AGENTS.md support since v1.20.3; workspace rules in .agents/rules/
+    projectFiles: ['.agents/rules'],
+    rulesDir: '.agents/rules',
+    // Shared Agent Skills location also used by Cursor — docs: https://cursor.com/docs/skills
+    skillsDirs: ['.agents/skills'],
+    skillFile: 'SKILL.md',
+    skillFrontmatter: ['name', 'description'],
     readsAgentsMd: true,
     bridge: 'native',
-    globalPaths: ['~/.copilot/copilot-instructions.md'],
+    globalPaths: ['~/.gemini/AGENTS.md', '~/.gemini/GEMINI.md'],
   },
-  // Additional tools on the agents.md official supported-tools list — all read AGENTS.md natively.
   {
     id: 'windsurf',
     name: 'Windsurf',
     cli: ['windsurf'],
     projectFiles: ['.windsurf/rules', '.windsurfrules'],
     rulesDir: '.windsurf/rules',
-    readsAgentsMd: true,
-    bridge: 'native',
-  },
-  {
-    id: 'aider',
-    name: 'Aider',
-    cli: ['aider'],
-    projectFiles: [],
-    readsAgentsMd: true,
-    bridge: 'native',
-  },
-  {
-    id: 'zed',
-    name: 'Zed',
-    cli: ['zed'],
-    projectFiles: [],
-    readsAgentsMd: true,
-    bridge: 'native',
-  },
-  {
-    id: 'continue',
-    name: 'Continue',
-    cli: [],
-    projectFiles: ['.continue/rules'],
-    rulesDir: '.continue/rules',
-    readsAgentsMd: true,
-    bridge: 'native',
-  },
-  {
-    id: 'amazonq',
-    name: 'Amazon Q',
-    cli: ['q'],
-    projectFiles: ['.amazonq/rules'],
-    rulesDir: '.amazonq/rules',
-    readsAgentsMd: true,
-    bridge: 'native',
-  },
-  {
-    id: 'jules',
-    name: 'Jules',
-    cli: [],
-    projectFiles: [],
     readsAgentsMd: true,
     bridge: 'native',
   },

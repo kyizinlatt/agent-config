@@ -23,7 +23,7 @@ const TARGET_FILES = [
   '.github/copilot-instructions.md',
   '.mcp.json', '.cursor/mcp.json', '.vscode/mcp.json',
 ];
-const TARGET_DIRS = ['.claude', '.cursor/rules', '.agents/rules', '.windsurf/rules', '.continue/rules', '.amazonq/rules'];
+const TARGET_DIRS = ['.claude', '.cursor/rules', '.agents/rules', '.windsurf/rules'];
 
 export function checkSecrets(repo, findings) {
   const seen = new Set();

@@ -35,7 +35,7 @@ Flags:
   --strict   treat warnings as failures (exit 2)
   --yes      apply fix/upgrade (otherwise dry-run)
 
-Tools: claude, codex, kimi, cursor, antigravity, gemini, copilot, windsurf, aider, zed, continue, amazonq, jules
+Tools: claude, cursor, gemini, copilot, codex, kimi, antigravity, windsurf
 Exit codes: 0 = pass, 1 = warnings, 2 = failures.`;
 
 function parseArgs(argv) {
