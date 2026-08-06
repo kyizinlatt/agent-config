@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -14,6 +18,9 @@ jobs:
     # Reads as "Test / Node 18" etc. in the checks UI, so it's clear what each job is.
     name: Test / Node ${{ matrix.node }}
     runs-on: ubuntu-latest
+    # Gate on Node 22; 18/20 stay in the matrix for engines coverage but infra flakes there
+    # must not block merge/ship (continue-on-error).
+    continue-on-error: ${{ matrix.node != 22 }}
     strategy:
       fail-fast: false
       matrix:

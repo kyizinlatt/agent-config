@@ -31,7 +31,7 @@ npm install -g agent-pipx
 npx agent-pipx
 ```
 
-Node ≥ 18. Current release: **v0.4.10**.
+Node ≥ 18. Current release: **v0.4.11**.
 
 ## Usage
 

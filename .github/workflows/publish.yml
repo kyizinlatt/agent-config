@@ -39,6 +39,20 @@ jobs:
       - name: Upgrade npm for OIDC trusted publishing
         run: npm install -g npm@latest
 
+      # Release tags must match package.json (v0.4.10 → 0.4.10). Skipped on workflow_dispatch.
+      - name: Assert package version matches release tag
+        if: github.event_name == 'release'
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.release.tag_name }}"
+          expected="${tag#v}"
+          actual=$(node -p "require('./package.json').version")
+          if [ "$actual" != "$expected" ]; then
+            echo "package.json version ($actual) != release tag ($tag → $expected)"
+            exit 1
+          fi
+          echo "version ok: $actual (tag $tag)"
+
       - name: Test before publish
         run: node --test
 

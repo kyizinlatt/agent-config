@@ -52,6 +52,24 @@ npm package publishes from GitHub Actions use **Trusted Publishing (OIDC)** — 
 `NPM_TOKEN`, no GitHub Environment. On npmjs.com → package Settings → Trusted Publisher,
 set workflow `publish.yml` and leave **Environment name blank**.
 
+## CI/CD trust model
+
+Workflow YAML under `.github/workflows/` is public by design (normal for FOSS). That is not a
+credential leak: CI uses `contents: read` only and no repository secrets; publish uses OIDC
+(`id-token: write`) instead of a long-lived npm token.
+
+**Who can publish to npm:** anyone who can create a GitHub Release (or run `publish.yml` via
+`workflow_dispatch`) on this repository. Treat write access and release creation as npm publish
+authority. The publish job also asserts that `package.json` version matches the release tag
+(`vX.Y.Z` → `X.Y.Z`) so a mistagged release cannot ship the wrong version.
+
+**What to review carefully:** PRs that change `ci.yml` or `publish.yml` (poisoned-pipeline risk).
+Do not merge workflow diffs without reading every new step.
+
+**What we intentionally do not do:** GitHub Environment required reviewers (solo-maintainer
+overhead), or blocking npm publish on the full CI matrix (older Node jobs are
+`continue-on-error` so infra flakes there do not own the merge gate — Node 22 does).
+
 ## What it reads
 
 To produce findings the tool reads text config and source files (`AGENTS.md`, `CLAUDE.md`,
