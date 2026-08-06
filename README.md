@@ -1,5 +1,11 @@
 # agent-pipx
 
+[![npm](https://img.shields.io/npm/v/agent-pipx)](https://www.npmjs.com/package/agent-pipx)
+[![CI](https://github.com/kyizinlatt/agent-pipx/actions/workflows/ci.yml/badge.svg)](https://github.com/kyizinlatt/agent-pipx/actions/workflows/ci.yml)
+[![Node](https://img.shields.io/node/v/agent-pipx)](https://www.npmjs.com/package/agent-pipx)
+[![License](https://img.shields.io/npm/l/agent-pipx)](LICENSE)
+[![runtime deps](https://img.shields.io/badge/runtime%20deps-0-brightgreen)](package.json)
+
 <img width="1200" height="900" alt="agent-pipx — AGENTS.md config audit" src="https://raw.githubusercontent.com/kyizinlatt/agent-pipx/main/assets/agent-pipx-cover.png" />
 
 Zero-dependency Node CLI that audits a repository's AI-agent configuration — config, rules,
@@ -31,7 +37,7 @@ npm install -g agent-pipx
 npx agent-pipx
 ```
 
-Node ≥ 18. Current release: **v0.4.12**.
+Node ≥ 18.
 
 ## Usage
 
