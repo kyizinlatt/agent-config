@@ -14,8 +14,16 @@ Package manager: npm.
 
 - Node.js ≥ 18, ES modules (`"type": "module"`)
 - **No runtime dependencies** — Node built-ins only (`fs`, `path`, `child_process`, `node:test`)
-- CLI entry `bin/agent-pipx.js` → `src/cli.js`; checks in `src/checks/`; tool knowledge in
-  `adapters/tools.js`
+
+## Repository layout
+
+- `bin/agent-pipx.js` → `src/cli.js` (CLI entry)
+- `src/checks/` — Secrets / Config / Rules / Styles / Environment (+ protocol & extensions)
+- `adapters/tools.js` — per-tool conventions (docs-cited; single authority)
+- `templates/` — `init` scaffolds; `project-template/` — harness seed files
+- `claude-harness/` — optional Claude Code-only hooks, commands, agents
+- `test/` — synthetic-repo tests (`node --test`)
+- `assets/` — README cover art (not packaged to npm)
 
 ## Commands
 

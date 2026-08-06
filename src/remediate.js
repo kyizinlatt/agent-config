@@ -52,8 +52,12 @@ const TIPS = [
     tip: 'Replace template stubs in AGENTS.md with real project rules, commands, and boundaries.',
   },
   {
+    re: /layout paths not found in the repo/i,
+    tip: 'Fix stale paths in the Repository layout section, or restore the missing directories/files on disk.',
+  },
+  {
     re: /missing recommended section/i,
-    tip: 'Add short Commands, Boundaries (do not touch), and Sensitive data sections to AGENTS.md.',
+    tip: 'Add short Commands, Repository layout, Boundaries (do not touch), and Sensitive data sections to AGENTS.md.',
   },
   {
     re: /tracked-findings section is missing recommended signal/i,

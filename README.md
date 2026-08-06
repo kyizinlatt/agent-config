@@ -1,24 +1,28 @@
-# Agent PipX
-<img width="989" height="506" alt="Screenshot 2569-07-31 at 16 09 30" src="https://github.com/user-attachments/assets/4a25a700-35cb-40c3-9326-7d6c75ce078d" />
+# agent-pipx
 
-Audit a repository's **AI-agent configuration** — config, rules, styles, environment — against the
-[`AGENTS.md`](https://agents.md) standard. Works for whatever coding agent your team uses: Claude
-Code, Codex, Kimi, Cursor, Antigravity, Gemini, Copilot.
+<img width="1200" height="900" alt="agent-pipx — AGENTS.md config audit" src="https://raw.githubusercontent.com/kyizinlatt/agent-pipx/main/assets/agent-pipx-cover.png" />
+
+Zero-dependency Node CLI that audits a repository's AI-agent configuration — config, rules,
+styles, environment — against the [`AGENTS.md`](https://agents.md) standard, for any coding agent.
 
 ```sh
 npx agent-pipx
 ```
 
-Zero dependencies, no API key. `check` / `report` / `init` / `fix` run fully offline;
-`upgrade` is the opt-in exception (queries npm).
+No API key. `check` / `report` / `init` / `fix` run offline; only `upgrade` talks to npm.
 
 ## Why
 
-Every agent tool has its own instruction files — `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`,
-`.agents/rules/` — but they should all express **one** set of rules. `AGENTS.md` is the emerging
-cross-tool standard (stewarded by the Linux Foundation's Agentic AI Foundation) that most tools now
-read natively. `agent-pipx` checks that your repo has a single source of truth and that every
-tool-specific file **bridges to it** instead of drifting into a second, conflicting copy.
+Every agent tool has its own instruction files (`CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`, …),
+but they should express **one** set of rules. `AGENTS.md` is the cross-tool single source of truth
+(Linux Foundation Agentic AI Foundation). Most tools read it natively; Claude Code bridges via a
+thin `CLAUDE.md` (`@AGENTS.md` or symlink).
+
+`agent-pipx` verifies that SSOT and those bridges — and, when present, skills, commands, settings,
+and handoff protocol — so adapters do not drift into a second conflicting copy.
+
+Findings: **fail** = mechanically broken · **warn** = judgement needed · **pass** = verified.
+Exit codes `0` / `1` / `2` stay stable for CI.
 
 ## Install
 
@@ -27,82 +31,76 @@ npm install -g agent-pipx
 npx agent-pipx
 ```
 
-Requires Node ≥ 18.
+Node ≥ 18. Current release: **v0.4.10**.
 
 ## Usage
 
 ```sh
-agent-pipx                 # check the current repo (live progress + summary, exit 0/1/2)
+agent-pipx                 # check (progress + summary; exit 0/1/2)
 agent-pipx check --json    # machine-readable findings
-agent-pipx check --sarif   # SARIF 2.1.0 for GitHub code scanning
-agent-pipx check --strict  # treat warnings as failures (exit 2) — good for CI
-agent-pipx report          # status + fix cards + hybrid judgement/prompt (issue-aware)
-agent-pipx fix             # dry-run safe fixes; add --yes to apply (backs up originals)
-agent-pipx init            # scaffold AGENTS.md + a bridge file for your detected tool(s)
+agent-pipx check --sarif   # SARIF 2.1.0 (GitHub code scanning)
+agent-pipx check --strict  # warnings → exit 2
+agent-pipx report          # status + fix cards + judgement prompt
+agent-pipx fix             # dry-run remediations; `--yes` applies (*.bak)
+agent-pipx init            # scaffold AGENTS.md + bridge for detected / `--tool`
 agent-pipx init --tool claude
-agent-pipx upgrade         # query npm for a newer release (always network); --yes installs globally
+agent-pipx upgrade         # npm version check; `--yes` installs -g
 ```
-
-Exit codes: `0` pass · `1` warnings · `2` failures — drop it into CI or a pre-commit hook.
 
 ## What it checks
 
 | Category | Checks |
 |---|---|
-| **Secrets** | Scans committed config/instruction files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.claude`, `.cursor/rules`, …) for accidentally-committed credentials (AWS/GitHub/Slack/Google/AI keys, private keys). Reports the type and line — never the secret value. |
-| **Config** | Each tool adapter present (CLAUDE.md, GEMINI.md, `.cursor/rules`, `.agents/rules`, …) bridges to `AGENTS.md` by import or symlink — no duplication or drift. `GEMINI.md` doesn't use an unresolvable `@~/…` import. `.cursor/rules` are `.mdc` with frontmatter. `.claude/settings.json` + hooks are valid and live. Surfaces configured MCP servers to review their scope. When present, skill packages (`SKILL.md` frontmatter) and slash-command files are structurally valid; `.claude/settings.local.json` should be gitignored. |
-| **Rules** | `AGENTS.md` exists as the single source of truth, no leftover template placeholders, not empty, under ~200 lines, no empty sections, and documents Commands / boundaries / sensitive-data. Missing SSOT while adapters exist is a failure. If a Tracked findings protocol (or Progress/plan artifacts) is claimed, warns when ledger-vs-progress / exit-gate signals are incomplete. |
-| **Styles** | Stack-detected antipattern scan (TypeScript `any`/`console.log`/`@ts-ignore`; Swift `try!`/`as!`/`print`). Advisory. |
-| **Environment** | Which agent CLIs are installed; package manager matches its lockfile; base tooling present; a CI or pre-commit quality gate exists. |
+| **Secrets** | Committed instruction/config files for credentials (AWS / GitHub / Slack / Google / AI keys, private keys). Type + line only — never the secret value. |
+| **Config** | Adapters bridge to `AGENTS.md` (import or symlink). Gemini must not use `@~/…`. Cursor `.mdc` needs frontmatter. `.claude/settings.json` + hooks valid. MCP server count surfaced. When present: `SKILL.md` / slash-command frontmatter; `.claude/settings.local.json` gitignored; soft layering warn if AGENTS.md is long while skills exist. |
+| **Rules** | `AGENTS.md` present (fail if adapters exist without it), no placeholders/stubs, lean (~200 lines), recommended signals: Commands, **Repository layout**, boundaries, sensitive-data. Layout backtick paths are soft-checked against the disk. Tracked-findings / Progress / plan claims get protocol-hygiene warns when incomplete. |
+| **Styles** | Stack antipatterns (TS `any` / `console.log` / `@ts-ignore`; Swift `try!` / `as!` / `print`). Advisory. |
+| **Environment** | Agent CLIs on `PATH`; lockfile matches package manager; CI or pre-commit gate. |
 
-Supported tools: Claude Code, Codex, Kimi, Cursor, Antigravity, Gemini, Copilot, Windsurf, Aider,
-Zed, Continue, Amazon Q, Jules.
+Tools: Claude Code, Codex, Kimi, Cursor, Antigravity, Gemini, Copilot, Windsurf, Aider, Zed,
+Continue, Amazon Q, Jules. Per-tool facts live in [`adapters/tools.js`](adapters/tools.js) (official
+docs cited) — checks never hard-code tool conventions elsewhere.
 
 ## The AGENTS.md model
 
 ```
-AGENTS.md  ← the single source of truth (your rules live here)
-├── CLAUDE.md        →  @AGENTS.md   (Claude Code reads CLAUDE.md; import or symlink bridges it)
-├── GEMINI.md        →  @./AGENTS.md (or a symlink)
-├── .cursor/rules/   →  optional scoped .mdc; Cursor also reads AGENTS.md natively
-├── .agents/rules/   →  optional scoped rules (Antigravity)
-└── Codex / Kimi / Copilot  →  read AGENTS.md directly, no bridge needed
+AGENTS.md  ← single source of truth
+├── CLAUDE.md / .claude/CLAUDE.md  →  @AGENTS.md
+├── GEMINI.md                      →  @./AGENTS.md  (never @~/…)
+├── .cursor/rules/*.mdc            →  optional scoped rules
+├── .agents/rules/                 →  optional scoped rules
+├── .claude/skills/*/SKILL.md      →  on-demand (structure checked if present)
+├── .cursor/skills/ · .agents/skills/
+└── Codex / Kimi / Copilot / …     →  read AGENTS.md natively
 ```
 
-Only Claude Code requires a bridge file (`CLAUDE.md` → `@AGENTS.md`). Gemini reads `AGENTS.md`
-natively; if you also keep a `GEMINI.md`, it must `@`-import or symlink `AGENTS.md` (never `@~/…`,
-which Gemini cannot resolve). Every other listed tool reads `AGENTS.md` directly.
+`init` scaffolds Project / Stack / **Repository layout** / Commands / Rules / Tracked findings /
+Boundaries / Sensitive data. Tracked findings: ledger = status; Progress = chronological evidence;
+`CODE_COMPLETE` ≠ `CLOSED` without exit-gate evidence. The checker warns on incomplete claims — it
+does not invent or close findings.
 
-### Durable audit and review handoffs
+## Claude Code harness (optional)
 
-The generated `AGENTS.md` also includes an optional tracked-findings protocol. When a project has
-an audit, security review, or hardening plan, the finding document keeps stable IDs and one current
-remediation ledger; progress files remain chronological history. The protocol separates code
-completion from production closure, prevents a later agent from redoing closed work, and requires
-explicit evidence before reopening or accepting risk.
-
-## Claude Code integration (optional)
-
-The [`claude-harness/`](claude-harness/) directory ships an optional Claude Code harness — hooks,
-`/ship` `/plan` `/handoff` `/config-check` commands, and reusable subagents — that any repo can
-link. The `/config-check` command and `config-auditor` subagent drive this same CLI. See
-[claude-harness/README.md](claude-harness/README.md).
+[`claude-harness/`](claude-harness/) is Claude-only (hooks, `/ship` `/plan` `/handoff`
+`/config-check`, subagents). Keep tool-neutral logic in `src/`. `/config-check` runs this CLI then
+adds judgement. `/ship` follows `AGENTS.md` branch policy, or current branch only — never invents a
+merge. See [claude-harness/README.md](claude-harness/README.md).
 
 ## Privacy & safety
 
-Safe to run on any repo, including private ones — enforced by tests (`test/safety.test.js`):
+Enforced by `test/safety.test.js`:
 
 | Guarantee | Detail |
 |---|---|
-| **Offline by default** | `check` / `report` / `init` / `fix` make zero network requests. Zero runtime deps. |
-| **Opt-in network** | Only `upgrade` contacts npm (`npm view`; `--yes` may `npm install -g`). |
-| **No silent code execution** | Offline commands never spawn a shell. CLIs are detected via a `PATH` scan. |
-| **Read-only audit** | `check` and `report` never create, modify, or delete a file. |
-| **Explicit writes only** | `init` creates missing files only; `fix` writes only with `--yes` (+ `*.bak`). |
-| **No content leaks** | Findings report counts, paths, and messages — never your file contents. |
+| **Offline by default** | `check` / `report` / `init` / `fix` — zero network; zero runtime deps |
+| **Opt-in network** | `upgrade` only (`npm view`; `--yes` may `npm install -g`) |
+| **No silent shell** | Offline commands do not spawn a shell; CLIs via `PATH` scan |
+| **Read-only audit** | `check` / `report` never write files |
+| **Explicit writes** | `init` creates missing files; `fix` only with `--yes` (+ `*.bak`) |
+| **No content leaks** | Findings: counts, paths, messages — not file contents |
 
-See [SECURITY.md](SECURITY.md) for the full policy (including CI Trusted Publishing).
+See [SECURITY.md](SECURITY.md).
 
 ## License
 
-See [LICENSE](LICENSE).
+[LICENSE](LICENSE) (Apache-2.0).

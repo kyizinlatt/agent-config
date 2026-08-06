@@ -16,6 +16,13 @@ Package manager: [pnpm | npm | pip | swift | …].
 - [Backend / DB]
 - [Hosting / runtime]
 
+## Repository layout
+
+- [Entry point — e.g. `bin/`, `src/main`, `app/`]
+- [Where domain logic lives]
+- [Tests / generated / do-not-edit trees]
+- List real paths in this repo (backticks); do not copy another stack's tree.
+
 ## Commands
 
 - Install: `[…]`
@@ -43,6 +50,16 @@ Package manager: [pnpm | npm | pip | swift | …].
 - Accepted risks need an owner, decision date, compensating controls, and review/expiry date.
 - Optional: if this repo keeps a durable plan, use one live plan file plus one lifecycle archive.
   Tracked sections need a stable ID and an exit gate; shipped means that gate has evidence.
+
+## Boundaries (do not touch)
+
+- [Generated files / directories the agent must not edit]
+- [Unrelated areas to leave alone]
+
+## Sensitive data
+
+- Never put secrets, credentials, tokens, or `.env` contents in this repo or in prompts.
+- [Where real config/secrets actually live, e.g. a secret manager]
 
 ## Claude Code harness (optional)
 

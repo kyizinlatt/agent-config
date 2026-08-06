@@ -21,6 +21,7 @@ const has = (f, sev, re) => f.items.some((x) => x.severity === sev && re.test(x.
 const FULL_AGENTS = [
   '# Project', '',
   '## Commands', '- Test: `npm test`', '- Build: `npm run build`', '',
+  '## Repository layout', '- `src/` owns the app; `test/` owns tests', '',
   '## Boundaries (do not touch)', '- generated/ is off limits', '',
   '## Sensitive data', '- never commit secrets or tokens', '',
 ].join('\n');
@@ -29,12 +30,52 @@ test('completeness: minimal AGENTS.md → warns about missing sections', () => {
   const repo = mkrepo({ 'AGENTS.md': '# P\n\nSome prose but no command, boundary, or secret guidance here at all.\n' });
   const f = runChecks(repo);
   assert.ok(has(f, WARN, /missing recommended section/), JSON.stringify(f.items.filter((i) => i.category === 'Rules'), null, 2));
+  assert.ok(has(f, WARN, /Repository layout/), 'structure signal required');
 });
 
 test('completeness: full AGENTS.md → no missing-section warning', () => {
   const repo = mkrepo({ 'AGENTS.md': FULL_AGENTS });
   const f = runChecks(repo);
   assert.ok(!has(f, WARN, /missing recommended section/), 'no false positive when sections present');
+});
+
+test('completeness: missing only layout → warns for structure', () => {
+  const md = [
+    '# Project', '',
+    '## Commands', '- Test: `npm test`', '',
+    '## Boundaries (do not touch)', '- generated/', '',
+    '## Sensitive data', '- never commit secrets', '',
+  ].join('\n');
+  const repo = mkrepo({ 'AGENTS.md': md });
+  const f = runChecks(repo);
+  assert.ok(has(f, WARN, /Repository layout \/ project structure/));
+});
+
+test('layout paths: missing on disk → warn', () => {
+  const md = [
+    '# Project', '',
+    '## Commands', '- Test: `npm test`', '',
+    '## Repository layout', '- `src/` owns the app', '- `does-not-exist-xyz/` is imaginary', '',
+    '## Boundaries (do not touch)', '- generated/', '',
+    '## Sensitive data', '- never commit secrets', '',
+  ].join('\n');
+  const repo = mkrepo({ 'AGENTS.md': md, 'src/.keep': '' });
+  const f = runChecks(repo);
+  assert.ok(has(f, WARN, /layout paths not found.*does-not-exist-xyz/), JSON.stringify(f.items.filter((i) => /layout/i.test(i.message)), null, 2));
+});
+
+test('layout paths: all resolve → pass', () => {
+  const md = [
+    '# Project', '',
+    '## Commands', '- Test: `npm test`', '',
+    '## Repository layout', '- `src/` owns the app', '- `bin/run.js` is the entry', '',
+    '## Boundaries (do not touch)', '- generated/', '',
+    '## Sensitive data', '- never commit secrets', '',
+  ].join('\n');
+  const repo = mkrepo({ 'AGENTS.md': md, 'src/.keep': '', 'bin/run.js': '#!/usr/bin/env node\n' });
+  const f = runChecks(repo);
+  assert.ok(has(f, 'pass', /layout paths resolve on disk/));
+  assert.ok(!has(f, WARN, /layout paths not found/));
 });
 
 test('MCP: configured servers surface a review line', () => {

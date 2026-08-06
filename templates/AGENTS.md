@@ -14,6 +14,13 @@
 - [UI / entry layer]
 - [State / data]
 
+## Repository layout
+
+- [Entry point — e.g. `bin/`, `src/main`, `app/`]
+- [Where domain logic lives]
+- [Tests / generated / do-not-edit trees]
+- List real paths in this repo (backticks); do not copy another stack's tree.
+
 ## Commands
 
 - Install: `[…]`
