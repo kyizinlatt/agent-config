@@ -56,6 +56,50 @@ const TIPS = [
     tip: 'Add short Commands, Boundaries (do not touch), and Sensitive data sections to AGENTS.md.',
   },
   {
+    re: /tracked-findings section is missing recommended signal/i,
+    tip: 'Restore ledger-vs-progress roles, code≠CLOSED, exit-gate, and accepted-risk signals in the Tracked findings section.',
+  },
+  {
+    re: /ledger-vs-progress roles|treat Progress as status/i,
+    tip: 'Document in AGENTS.md that the remediation ledger owns status and Progress/changelog is chronological evidence only.',
+  },
+  {
+    re: /references a progress log but no PROGRESS/i,
+    tip: 'Add a PROGRESS.md (or adjust AGENTS.md so it does not claim a progress log that does not exist).',
+  },
+  {
+    re: /add an archive\/rotation note/i,
+    tip: 'Rotate old Progress entries into an archive file, or document the rotation rule in the progress log header.',
+  },
+  {
+    re: /findings\/review document but none/i,
+    tip: 'Add the review/audit document with a remediation ledger, or remove the stale path from AGENTS.md.',
+  },
+  {
+    re: /durable plan\/archive workflow but no plan directory|missing .+ on tracked sections|one live plan \+ one lifecycle archive/i,
+    tip: 'Keep one live plan + one lifecycle archive; give each tracked section a stable ID and an exit gate.',
+  },
+  {
+    re: /skill directory missing/i,
+    tip: 'Add SKILL.md with YAML frontmatter (`description`, and `name` matching the directory) inside the skill folder.',
+  },
+  {
+    re: /has no YAML frontmatter|frontmatter is missing a non-empty description|frontmatter name .+ does not match/i,
+    tip: 'Add YAML frontmatter with a non-empty description; if `name` is set, it must match the parent directory.',
+  },
+  {
+    re: /slash commands should stay thin entry points/i,
+    tip: 'Keep the command as a thin entry point; move methodology into a skill or AGENTS.md.',
+  },
+  {
+    re: /settings\.local\.json is not covered by \.gitignore/i,
+    tip: 'Add `settings.local.json` (or `.claude/settings.local.json`) to `.gitignore` so local Claude settings are not committed.',
+  },
+  {
+    re: /move on-demand workflows into skills/i,
+    tip: 'Trim always-on AGENTS.md; put task-specific workflows in skills so they load only when relevant.',
+  },
+  {
     re: /empty section/i,
     tip: 'Fill each empty heading in AGENTS.md with real guidance, or delete the unused heading.',
   },

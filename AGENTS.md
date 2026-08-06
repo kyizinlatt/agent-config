@@ -34,6 +34,21 @@ Package manager: npm.
 - Never commit anything private (personal names, machine paths, private repo names) — this repo
   is public. Run the grep gate before shipping.
 
+## Tracked findings (when this repository has audits or reviews)
+
+- Keep stable finding IDs and one current remediation ledger in the finding document. The ledger is
+  current status authority; treat progress or changelog files as chronological evidence, not status.
+- Explicit states help handoffs: `OPEN`, `IN_PROGRESS`, `CODE_COMPLETE`, `PRODUCTION_PENDING`,
+  `CLOSED`, `BLOCKED_DECISION`, `ACCEPTED_RISK`, `SUPERSEDED`. Distinguish `CODE_COMPLETE` /
+  `PRODUCTION_PENDING` from `CLOSED`; close only after every applicable acceptance test and
+  live/external exit gate has evidence.
+- Check the ledger and current implementation before starting. Update the ledger with the fix, and
+  never silently redo a closed finding—reopen it with contradictory evidence.
+- Accepted risks need an owner, decision date, compensating controls, and review/expiry date.
+- Optional: if this repo keeps a durable plan, use one live plan file plus one lifecycle archive
+  (shipped index). Every tracked section needs a stable ID and an exit gate; "shipped" means that
+  gate has evidence — code green or a progress entry alone is not enough.
+
 ## Boundaries (do not touch)
 
 - Do not add runtime or dev dependencies — Node built-ins only.

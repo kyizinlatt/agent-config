@@ -42,7 +42,7 @@ claude-harness/
 │   ├── hooks/              # guard-secrets, guard-push, check-hygiene
 │   ├── commands/          # ship, handoff, plan, config-check
 │   ├── agents/            # reusable subagents (reviewer, test-runner, config-auditor)
-│   ├── skills/            # extension point (empty by default)
+│   ├── skills/            # extension point (empty by default; structure audited by agent-pipx)
 │   └── settings.json      # base permissions + hook wiring (template)
 ├── packs/
 │   ├── web-ts/            # any/console.log/@ts-ignore, proxy.ts, tailwind v4

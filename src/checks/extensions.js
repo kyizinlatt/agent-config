@@ -1,0 +1,290 @@
+// Extension-surface checks: skills/, commands/, and local settings gitignore hygiene.
+// Conventions come from adapters/tools.js (official docs cited there) — never hard-code tool facts.
+import fs from 'node:fs';
+import path from 'node:path';
+import { TOOLS } from '../../adapters/tools.js';
+import { isDir, isFile, isInsideRepo, isSymlink, readText } from '../detect.js';
+import { agentsMdPath } from '../ssot.js';
+
+const COMMAND_BODY_WARN_LINES = 40;
+
+/**
+ * @param {string} repo
+ * @param {import('../findings.js').Findings} findings
+ */
+export function checkExtensions(repo, findings) {
+  const seenSkillRoots = new Set();
+  const seenCommandRoots = new Set();
+
+  for (const tool of TOOLS) {
+    for (const rel of tool.skillsDirs || []) {
+      if (seenSkillRoots.has(rel)) continue;
+      seenSkillRoots.add(rel);
+      checkSkillsDir(repo, rel, tool, findings);
+    }
+    if (tool.commandsDir && !seenCommandRoots.has(tool.commandsDir)) {
+      seenCommandRoots.add(tool.commandsDir);
+      checkCommandsDir(repo, tool.commandsDir, findings);
+    }
+  }
+
+  checkLocalSettingsGitignore(repo, findings);
+  checkSoftLayering(repo, findings);
+}
+
+function checkSkillsDir(repo, relDir, tool, findings) {
+  const dir = path.join(repo, relDir);
+  if (!isDir(dir)) return;
+  if (isSymlink(dir) && !isInsideRepo(repo, dir)) {
+    findings.warn('Config', `${relDir}/ is a symlink outside the repo — skipping skills checks (CWE-59)`, relDir);
+    return;
+  }
+
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+
+  const skillFile = tool.skillFile || 'SKILL.md';
+  let checked = 0;
+  for (const e of entries) {
+    if (e.name.startsWith('.')) continue;
+    const full = path.join(dir, e.name);
+    // Symlink dirs: still check they resolve; treat as skill folders when they are directories.
+    let isDirectory = e.isDirectory();
+    if (e.isSymbolicLink()) {
+      try {
+        isDirectory = fs.statSync(full).isDirectory();
+      } catch {
+        findings.fail('Config', `dangling symlink: ${path.join(relDir, e.name)}`, path.join(relDir, e.name));
+        continue;
+      }
+    }
+    if (!isDirectory) continue;
+
+    checked++;
+    const skillPath = path.join(full, skillFile);
+    const skillRel = path.join(relDir, e.name, skillFile);
+    if (!isFile(skillPath)) {
+      findings.fail('Config', `skill directory missing ${skillFile}: ${path.join(relDir, e.name)}`, path.join(relDir, e.name));
+      continue;
+    }
+
+    const content = readText(skillPath);
+    const fm = parseFrontmatter(content);
+    if (!fm) {
+      findings.warn('Config', `${skillRel} has no YAML frontmatter — add description (and name) so the agent can match it`, skillRel);
+      continue;
+    }
+    const desc = (fm.description || '').trim();
+    if (!desc) {
+      findings.warn('Config', `${skillRel} frontmatter is missing a non-empty description`, skillRel);
+    }
+    const name = (fm.name || '').trim();
+    if (name && name !== e.name) {
+      findings.warn(
+        'Config',
+        `${skillRel} frontmatter name "${name}" does not match directory "${e.name}"`,
+        skillRel,
+      );
+    }
+    if (desc && (!name || name === e.name)) {
+      findings.pass('Config', `skill ok: ${path.join(relDir, e.name)}`, skillRel);
+    }
+  }
+
+  if (checked === 0) {
+    findings.pass('Config', `${relDir}/ present (no skill packages yet)`, relDir);
+  }
+}
+
+function checkCommandsDir(repo, relDir, findings) {
+  const dir = path.join(repo, relDir);
+  if (!isDir(dir)) return;
+  if (isSymlink(dir) && !isInsideRepo(repo, dir)) {
+    findings.warn('Config', `${relDir}/ is a symlink outside the repo — skipping commands checks (CWE-59)`, relDir);
+    return;
+  }
+
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+
+  for (const e of entries) {
+    if (!e.isFile() || !e.name.endsWith('.md')) continue;
+    const full = path.join(dir, e.name);
+    const rel = path.join(relDir, e.name);
+    const content = readText(full);
+    const fm = parseFrontmatter(content);
+    if (!fm) {
+      findings.warn('Config', `${rel} has no YAML frontmatter — add a description for the slash command`, rel);
+      continue;
+    }
+    if (!(fm.description || '').trim()) {
+      findings.warn('Config', `${rel} frontmatter is missing a non-empty description`, rel);
+    }
+    if (fm['allowed-tools'] != null || fm.allowed_tools != null) {
+      const raw = fm['allowed-tools'] ?? fm.allowed_tools;
+      if (typeof raw === 'string' && raw.trim() && /:\s*$/.test(raw.trim())) {
+        findings.warn('Config', `${rel} allowed-tools looks truncated or invalid`, rel);
+      }
+    }
+    const bodyLines = bodyLineCount(content);
+    if (bodyLines > COMMAND_BODY_WARN_LINES) {
+      findings.warn(
+        'Config',
+        `${rel} body is ${bodyLines} lines — slash commands should stay thin entry points (method belongs in a skill or AGENTS.md)`,
+        rel,
+      );
+    } else if ((fm.description || '').trim()) {
+      findings.pass('Config', `command ok: ${rel}`, rel);
+    }
+  }
+}
+
+/** Warn when project-local Claude settings are not ignored. */
+function checkLocalSettingsGitignore(repo, findings) {
+  const claudeDir = path.join(repo, '.claude');
+  if (!isDir(claudeDir)) return;
+  if (isSymlink(claudeDir) && !isInsideRepo(repo, claudeDir)) return;
+
+  const target = '.claude/settings.local.json';
+  const ignored = pathIgnoredByGitignore(repo, target);
+  if (ignored === false) {
+    findings.warn(
+      'Config',
+      `${target} is not covered by .gitignore — local Claude settings/permissions can leak into commits`,
+      target,
+    );
+  } else if (ignored === true) {
+    findings.pass('Config', `${target} is gitignored (or would be)`, target);
+  }
+}
+
+/**
+ * Soft layering: oversized always-on instructions while on-demand skills exist.
+ * @param {string} repo
+ * @param {import('../findings.js').Findings} findings
+ */
+function checkSoftLayering(repo, findings) {
+  const agents = agentsMdPath(repo);
+  if (!agents) return;
+  const lines = readText(agents).split('\n').length;
+  if (lines <= 200) return;
+
+  let skillCount = 0;
+  for (const tool of TOOLS) {
+    for (const rel of tool.skillsDirs || []) {
+      const dir = path.join(repo, rel);
+      if (!isDir(dir)) continue;
+      try {
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+          if (e.name.startsWith('.')) continue;
+          const full = path.join(dir, e.name);
+          if (e.isDirectory() || (e.isSymbolicLink() && isDir(full))) skillCount++;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  if (skillCount > 0) {
+    findings.warn(
+      'Config',
+      `AGENTS.md is ${lines} lines while ${skillCount} skill package(s) exist — move on-demand workflows into skills so always-on instructions stay lean`,
+      'AGENTS.md',
+    );
+  }
+}
+
+/**
+ * Minimal YAML frontmatter parse (key: value lines only). Returns null if no fence.
+ * @param {string} content
+ * @returns {Record<string, string>|null}
+ */
+export function parseFrontmatter(content) {
+  const lines = content.split('\n');
+  if (!/^---\s*$/.test(lines[0] ?? '')) return null;
+  const data = {};
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^---\s*$/.test(line)) break;
+    const m = line.match(/^([A-Za-z0-9_-]+)\s*:\s*(.*)$/);
+    if (m) data[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
+  }
+  return data;
+}
+
+function bodyLineCount(content) {
+  const lines = content.split('\n');
+  if (!/^---\s*$/.test(lines[0] ?? '')) return lines.filter((l) => l.trim()).length;
+  let i = 1;
+  while (i < lines.length && !/^---\s*$/.test(lines[i])) i++;
+  return lines.slice(i + 1).filter((l) => l.trim()).length;
+}
+
+/**
+ * Best-effort gitignore match without spawning git. null = no .gitignore to consult.
+ * @param {string} repo
+ * @param {string} relPosix path with forward or native separators
+ * @returns {boolean|null}
+ */
+export function pathIgnoredByGitignore(repo, relPosix) {
+  const rel = relPosix.split(path.sep).join('/');
+  const files = [path.join(repo, '.gitignore'), path.join(repo, '.claude', '.gitignore')];
+  let saw = false;
+  let ignored = false;
+  for (const gi of files) {
+    if (!isFile(gi)) continue;
+    saw = true;
+    const base = path.dirname(gi) === path.join(repo, '.claude') ? '.claude/' : '';
+    for (const raw of readText(gi).split('\n')) {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) continue;
+      const neg = line.startsWith('!');
+      const pat = neg ? line.slice(1) : line;
+      if (matchGitignorePattern(pat, rel, base)) {
+        ignored = !neg;
+      }
+    }
+  }
+  if (!saw) {
+    // If the local file does not exist yet, still warn when nothing would ignore it.
+    // No gitignore at all → treat as not ignored when .claude/ exists (caller only runs then).
+    return false;
+  }
+  return ignored;
+}
+
+/** Very small subset of gitignore globbing sufficient for settings.local.json. */
+function matchGitignorePattern(pattern, rel, prefix) {
+  let p = pattern.replace(/^\.\//, '');
+  // Patterns in .claude/.gitignore are relative to that dir.
+  const candidate = prefix ? (rel.startsWith(prefix) ? rel.slice(prefix.length) : rel) : rel;
+  if (p.endsWith('/')) p = p.slice(0, -1);
+
+  if (p === 'settings.local.json' || p.endsWith('/settings.local.json')) {
+    return candidate === 'settings.local.json' || candidate.endsWith('/settings.local.json') || rel.endsWith('settings.local.json');
+  }
+  if (p === '.claude/settings.local.json' || p === '**/.claude/settings.local.json') {
+    return rel === '.claude/settings.local.json' || rel.endsWith('/.claude/settings.local.json');
+  }
+  if (p === '*.local.json') {
+    return /(?:^|\/)[^/]+\.local\.json$/.test(candidate) || /(?:^|\/)[^/]+\.local\.json$/.test(rel);
+  }
+  if (p === '*' || p === '**') return true;
+
+  // Exact path match
+  if (p === candidate || p === rel) return true;
+  // Simple ** / * suffix
+  if (p.startsWith('**/')) {
+    const suf = p.slice(3);
+    return candidate === suf || candidate.endsWith('/' + suf) || rel.endsWith('/' + suf) || rel === suf;
+  }
+  return false;
+}

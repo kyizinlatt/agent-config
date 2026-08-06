@@ -23,6 +23,12 @@ export const TOOLS = [
     // Claude reads CLAUDE.md, NOT AGENTS.md — docs: https://code.claude.com/docs/en/memory
     projectFiles: ['CLAUDE.md', '.claude/CLAUDE.md'],
     settings: '.claude/settings.json',
+    // Skills + slash commands — docs: https://code.claude.com/docs/en/skills
+    // and https://code.claude.com/docs/en/slash-commands
+    skillsDirs: ['.claude/skills'],
+    commandsDir: '.claude/commands',
+    skillFile: 'SKILL.md',
+    skillFrontmatter: ['name', 'description'],
     readsAgentsMd: false,
     bridge: 'import-or-symlink',
     importSupportsTilde: true, // Claude's @import expands ~ and absolute paths (depth 4)
@@ -47,6 +53,10 @@ export const TOOLS = [
     rulesDir: '.cursor/rules',
     rulesExt: '.mdc', // plain .md in this dir is IGNORED by Cursor
     rulesFrontmatter: ['description', 'globs', 'alwaysApply'],
+    // Agent Skills — docs: https://cursor.com/docs/skills
+    skillsDirs: ['.cursor/skills', '.agents/skills'],
+    skillFile: 'SKILL.md',
+    skillFrontmatter: ['name', 'description'],
     readsAgentsMd: true,
     bridge: 'native',
   },
@@ -57,6 +67,10 @@ export const TOOLS = [
     // AGENTS.md support since v1.20.3; workspace rules in .agents/rules/
     projectFiles: ['.agents/rules'],
     rulesDir: '.agents/rules',
+    // Shared Agent Skills location also used by Cursor — docs: https://cursor.com/docs/skills
+    skillsDirs: ['.agents/skills'],
+    skillFile: 'SKILL.md',
+    skillFrontmatter: ['name', 'description'],
     readsAgentsMd: true,
     bridge: 'native',
     globalPaths: ['~/.gemini/AGENTS.md', '~/.gemini/GEMINI.md'],

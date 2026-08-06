@@ -16,3 +16,7 @@ If the repo has `PROGRESS.md`, prepend a new entry at the top (newest first):
 
 Keep it terse — facts, no filler. Convert relative dates to absolute. If `PROGRESS.md` does
 not exist, propose creating one and show the entry you would add.
+
+**Remind (do not auto-edit):** Progress is chronological evidence, not status authority. If this
+session remediates a tracked finding, say whether the finding document's remediation ledger still
+needs an update — and that `CODE_COMPLETE` is not `CLOSED` until exit-gate evidence exists.

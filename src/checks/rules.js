@@ -1,8 +1,8 @@
 // RULES checks: the AGENTS.md single source of truth exists, is real (not template stubs), and
-// is not missing while tool adapters expect it.
-import path from 'node:path';
-import { detectAdapters, isFile, readText } from '../detect.js';
+// is not missing while tool adapters expect it. Also advisory protocol hygiene when claimed.
+import { detectAdapters, readText } from '../detect.js';
 import { agentsMdPath } from '../ssot.js';
+import { checkProtocolArtifacts, checkProtocolSignals } from './protocol.js';
 
 const PLACEHOLDER = /\{\{[A-Z_]+\}\}/; // {{PROJECT_NAME}} etc. left from scaffolding
 const STUB = /\[(…|\.\.\.|one-line description|Framework \+ language|Domain rule)/;
@@ -17,6 +17,8 @@ export function checkRules(repo, findings) {
     } else {
       findings.warn('Rules', 'no AGENTS.md — project rules are undocumented');
     }
+    // Progress-only repos can still get artifact hygiene without AGENTS.md.
+    checkProtocolArtifacts(repo, null, findings);
     return;
   }
 
@@ -37,6 +39,8 @@ export function checkRules(repo, findings) {
 
   checkQuality(content, findings);
   checkCompleteness(content, findings);
+  checkProtocolSignals(content, findings);
+  checkProtocolArtifacts(repo, content, findings);
 }
 
 // Does AGENTS.md document the essentials an agent needs? One compact advisory line, low

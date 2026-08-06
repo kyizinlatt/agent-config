@@ -7,6 +7,7 @@ import {
   detectAdapters, exists, isDir, isDangling, isFile, isInsideRepo, isSymlink, readlink, readText, walk,
 } from '../detect.js';
 import { agentsMdPath, verifyBridge } from '../ssot.js';
+import { checkExtensions } from './extensions.js';
 
 const CORE_HOOKS = ['guard-secrets.sh', 'guard-push.sh', 'guard-env.sh', 'check-hygiene.sh'];
 
@@ -51,6 +52,9 @@ export function checkConfig(repo, findings) {
 
   // 3. MCP servers — surface how many are wired so their tool scope gets reviewed.
   checkMcp(repo, findings);
+
+  // 4. Skills / commands structure + local-settings gitignore + soft layering.
+  checkExtensions(repo, findings);
 }
 
 function checkMcp(repo, findings) {

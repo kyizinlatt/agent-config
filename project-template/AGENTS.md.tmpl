@@ -32,13 +32,17 @@ Package manager: [pnpm | npm | pip | swift | …].
 
 ## Tracked findings (when this repository has audits or reviews)
 
-- Keep stable finding IDs and one current remediation ledger in the finding document. Progress files
-  are chronological evidence, not current status.
-- `CODE_COMPLETE` and `PRODUCTION_PENDING` are not `CLOSED`; closure requires every applicable
-  acceptance test and live/external exit gate.
+- Keep stable finding IDs and one current remediation ledger in the finding document. The ledger is
+  current status authority; progress files are chronological evidence, not current status.
+- Explicit states help handoffs: `OPEN`, `IN_PROGRESS`, `CODE_COMPLETE`, `PRODUCTION_PENDING`,
+  `CLOSED`, `BLOCKED_DECISION`, `ACCEPTED_RISK`, `SUPERSEDED`. `CODE_COMPLETE` and
+  `PRODUCTION_PENDING` are not `CLOSED`; closure requires every applicable acceptance test and
+  live/external exit gate.
 - Check the ledger and current implementation before starting, update both with the remediation,
   and reopen closed work only with contradictory evidence.
 - Accepted risks need an owner, decision date, compensating controls, and review/expiry date.
+- Optional: if this repo keeps a durable plan, use one live plan file plus one lifecycle archive.
+  Tracked sections need a stable ID and an exit gate; shipped means that gate has evidence.
 
 ## Claude Code harness (optional)
 
