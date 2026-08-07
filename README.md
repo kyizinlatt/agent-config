@@ -108,6 +108,11 @@ Enforced by `test/safety.test.js`:
 
 See [SECURITY.md](SECURITY.md).
 
+## Contributing
+
+Fork → branch → PR against `main`. Maintainers review; `main` is protected (`Test / Node 22`
+must pass). See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
 [LICENSE](LICENSE) (Apache-2.0).
